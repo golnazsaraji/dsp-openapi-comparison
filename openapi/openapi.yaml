@@ -1,0 +1,121 @@
+openapi: 3.0.0
+
+info:
+  title: DSP Film API
+  version: 1.0.0
+  description: API used to compare OpenAPI Generator and SwaggerHub server stub generation.
+
+servers:
+  - url: http://localhost:3000
+
+paths:
+  /films:
+    get:
+      summary: Get all films
+      operationId: filmsGET
+      responses:
+        '200':
+          description: List of films
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Film'
+
+    post:
+      summary: Create a new film
+      operationId: filmsPOST
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewFilm'
+      responses:
+        '201':
+          description: Film created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Film'
+
+  /films/{id}:
+    get:
+      summary: Get film by id
+      operationId: filmsIdGET
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Film found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Film'
+        '404':
+          description: Film not found
+
+    delete:
+      summary: Delete film by id
+      operationId: filmsIdDELETE
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Film deleted
+        '404':
+          description: Film not found
+
+  /status:
+    get:
+      summary: API status
+      operationId: statusGET
+      responses:
+        '200':
+          description: API status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+
+components:
+  schemas:
+    Film:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Interstellar
+      required:
+        - id
+        - title
+
+    NewFilm:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Inception
+      required:
+        - title
+
+    Status:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+      required:
+        - status

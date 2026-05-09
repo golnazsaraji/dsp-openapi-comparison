@@ -1,0 +1,72 @@
+/* eslint-disable no-unused-vars */
+const Service = require('./Service');
+
+const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
+
+/**
+* Get all films
+*
+* returns List
+* */
+const filmsGET = () => new Promise(
+  async (resolve, reject) => {
+    try {
+      const films = await DefaultServiceAdapter.filmsGET();
+      resolve(Service.successResponse(films));
+    } catch (e) {
+      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 405));
+    }
+  },
+);
+
+const filmsIdDELETE = ({ id }) => new Promise(
+  async (resolve, reject) => {
+    try {
+      const deleted = await DefaultServiceAdapter.filmsIdDELETE({ id });
+      resolve(Service.successResponse({ deleted }));
+    } catch (e) {
+      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 405));
+    }
+  },
+);
+
+const filmsIdGET = ({ id }) => new Promise(
+  async (resolve, reject) => {
+    try {
+      const film = await DefaultServiceAdapter.filmsIdGET({ id });
+      resolve(Service.successResponse(film));
+    } catch (e) {
+      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 405));
+    }
+  },
+);
+
+const filmsPOST = ({ newFilm }) => new Promise(
+  async (resolve, reject) => {
+    try {
+      const createdFilm = await DefaultServiceAdapter.filmsPOST({ newFilm });
+      resolve(Service.successResponse(createdFilm, 201));
+    } catch (e) {
+      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 405));
+    }
+  },
+);
+
+const statusGET = () => new Promise(
+  async (resolve, reject) => {
+    try {
+      const status = await DefaultServiceAdapter.statusGET();
+      resolve(Service.successResponse(status));
+    } catch (e) {
+      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 405));
+    }
+  },
+);
+
+module.exports = {
+  filmsGET,
+  filmsIdDELETE,
+  filmsIdGET,
+  filmsPOST,
+  statusGET,
+};
