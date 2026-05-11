@@ -1,6 +1,14 @@
 
 # OpenAPI Generated JavaScript/Express Server
 
+## Project Note
+
+This directory contains the server stub generated with OpenAPI Generator for the DSP OpenAPI comparison project.
+
+Most files in this directory are generated and may be overwritten when the OpenAPI specification is regenerated. The handwritten business logic is kept outside this directory in `../shared-services/`, and the generated service layer is reconnected through `../adapters/openapi-generator/` and `../scripts/patch-openapi-generator.js`.
+
+The rest of this README is the original generated OpenAPI Generator documentation.
+
 ## Overview
 This server was generated using the [OpenAPI Generator](https://openapi-generator.tech) project.  The code generator, and it's generated code allows you to develop your system with an API-First attitude, where the API contract is the anchor and definer of your project, and your code and business-logic aims to complete and comply to the terms in the API contract.
 
