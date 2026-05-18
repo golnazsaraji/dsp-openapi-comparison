@@ -136,11 +136,17 @@ Architecture
 The project uses the following layered architecture:
 
 OpenAPI Specification
+
         ↓
+
 Generated API Layer
+
         ↓
+
 Adapter Layer
+
         ↓
+        
 Shared Handwritten Services
 
 The handwritten business logic is intentionally isolated inside:
