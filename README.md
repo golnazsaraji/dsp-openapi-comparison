@@ -146,7 +146,7 @@ Generated API Layer
 Adapter Layer
 
         ↓
-        
+
 Shared Handwritten Services
 
 The handwritten business logic is intentionally isolated inside:
@@ -159,6 +159,8 @@ This approach minimizes coupling between generated code and handwritten business
 
 OpenAPI Generator Workflow
 Standard Generation
+
+```text
 openapi-generator-cli generate \
 -i openapi/openapi.yaml \
 -g nodejs-express-server \
@@ -166,14 +168,18 @@ openapi-generator-cli generate \
 Template Extraction
 openapi-generator-cli author template -g nodejs-express-server
 
+```
 This command extracts the internal generator templates into the out/ directory.
 
 Customized Generation
+
+```text
 openapi-generator-cli generate \
 -i openapi/openapi.yaml \
 -g nodejs-express-server \
 -t out \
 -o generated-openapi-generator-custom
+```
 
 The -t out option instructs OpenAPI Generator to use the customized templates stored in the out/ directory.
 
@@ -181,12 +187,16 @@ Custom Template Strategy
 
 The default generated services originally returned placeholder responses such as:
 
+```text
 resolve(Service.successResponse({}));
+```
 
 The service.mustache template was customized so that generated services automatically delegate to the external adapter layer:
 
+```text
 const result = await DefaultServiceAdapter.{{operationId}}(...);
 resolve(Service.successResponse(result));
+```
 
 This removes the need for post-generation patch scripts.
 
@@ -196,9 +206,11 @@ The customized generated server was successfully executed.
 
 The following endpoints were verified:
 
+```text
 GET /films
 GET /films/1
 GET /status
+```
 
 The responses were successfully produced by the handwritten implementation stored in shared-services/.
 
