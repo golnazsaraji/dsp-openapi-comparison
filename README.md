@@ -17,9 +17,10 @@ For this reason, this project separates:
 - generated server code
 - handwritten business logic
 - adapter code that connects generated services to handwritten services
-- patch scripts that restore the integration after regeneration
+- custom template generation strategies
+- optional experimental patch scripts used during earlier experiments
 
-The experiment shows that handwritten logic should not be placed directly inside generated files. Instead, it should live outside the generated folders and be connected through adapters or post-generation scripts.
+The experiment shows that handwritten logic should not be placed directly inside generated files. Instead, it should live outside the generated folders and be connected through adapters and customized generation templates.
 
 ## Main Directories
 
@@ -68,8 +69,12 @@ To run the SwaggerHub / Swagger Codegen version:
 cd generated-swaggerhub
 npm start
 ```
+The generated projects may use different ports depending on the generator configuration.
 
-Both generated projects use port `8080` by default, so they should be run one at a time unless the port configuration is changed.
+During the experiments:
+
+- OpenAPI Generator was executed on port `3000`
+- SwaggerHub / Swagger Codegen was executed on port `8080`
 
 ## Patch Workflow
 
@@ -95,6 +100,7 @@ The main written analysis is in:
 
 - `docs/01-swaggerhub-analysis.md`
 - `docs/02-experimental-comparison.md`
+- `docs/03-openapi-generator-options-analysis.md`
 
 These documents describe the observations about SwaggerHub, the runtime tests, the regeneration experiment, and the final symmetric adapter/patch architecture.
 
@@ -131,10 +137,11 @@ dsp-openapi-comparison/
 
 ```
 
-Architecture
+## Architecture
 
 The project uses the following layered architecture:
 
+```text
 OpenAPI Specification
 
         ↓
@@ -149,29 +156,38 @@ Adapter Layer
 
 Shared Handwritten Services
 
+```
+
 The handwritten business logic is intentionally isolated inside:
 
+```text
 shared-services/
+```
 
 The generated API layer delegates requests to adapter modules, which connect the generated server stubs with the handwritten implementation.
 
 This approach minimizes coupling between generated code and handwritten business logic.
 
-OpenAPI Generator Workflow
-Standard Generation
+## OpenAPI Generator Workflow
+### Standard Generation
 
 ```text
 openapi-generator-cli generate \
 -i openapi/openapi.yaml \
 -g nodejs-express-server \
 -o generated-openapi-generator
-Template Extraction
-openapi-generator-cli author template -g nodejs-express-server
 
 ```
+
+### Template Extraction
+
+```text
+openapi-generator-cli author template -g nodejs-express-server
+```
+
 This command extracts the internal generator templates into the out/ directory.
 
-Customized Generation
+### Customized Generation
 
 ```text
 openapi-generator-cli generate \
@@ -183,7 +199,7 @@ openapi-generator-cli generate \
 
 The -t out option instructs OpenAPI Generator to use the customized templates stored in the out/ directory.
 
-Custom Template Strategy
+## Custom Template Strategy
 
 The default generated services originally returned placeholder responses such as:
 
@@ -200,7 +216,7 @@ resolve(Service.successResponse(result));
 
 This removes the need for post-generation patch scripts.
 
-Runtime Verification
+## Runtime Verification
 
 The customized generated server was successfully executed.
 
@@ -214,17 +230,17 @@ GET /status
 
 The responses were successfully produced by the handwritten implementation stored in shared-services/.
 
-Current Conclusions
+## Current Conclusions
 
 The experiments suggest that:
 
-OpenAPI Generator does not directly expose built-in configuration options for handwritten/generated code separation.
-Post-generation patching is possible but difficult to maintain for larger projects.
-Template customization provides a more scalable and regeneration-safe approach.
-Local automated generation workflows are preferable to manual web-based workflows.
+- OpenAPI Generator does not directly expose built-in configuration options for handwritten/generated code separation.
+- Post-generation patching is possible but difficult to maintain for larger projects.
+- Template customization provides a more scalable and regeneration-safe approach.
+- Local automated generation workflows are preferable to manual web-based workflows.
 
 Further investigation may include:
 
-additional generators,
-advanced template customization,
-and comparison with alternative OpenAPI-related tools.
+- additional generators,
+- advanced template customization,
+- and comparison with alternative OpenAPI-related tools.
