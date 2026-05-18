@@ -1,0 +1,52 @@
+/* eslint-disable no-unused-vars */
+const Service = require('./Service');
+const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
+
+{{#operations}}
+{{#operation}}
+/**
+{{#summary}}
+* {{{.}}}
+{{/summary}}
+{{#notes}}
+* {{{.}}}
+{{/notes}}
+*
+{{#allParams}}
+* {{paramName}} {{{dataType}}} {{{description}}}{{^required}} (optional){{/required}}
+{{/allParams}}
+{{^returnType}}
+* no response value expected for this operation
+{{/returnType}}
+{{#returnType}}
+* returns {{{.}}}
+{{/returnType}}
+* */
+const {{{operationId}}} = ({{#allParams}}{{#-first}}{ {{/-first}}{{paramName}}{{^-last}}, {{/-last}}{{#-last}} }{{/-last}}{{/allParams}}) => new Promise(
+  async (resolve, reject) => {
+    try {
+      const result = await DefaultServiceAdapter.{{operationId}}(
+        {{#allParams}}
+          {{paramName}},
+        {{/allParams}}
+      );
+
+     resolve(Service.successResponse(result));
+} catch (e) {
+      reject(Service.rejectResponse(
+        e.message || 'Invalid input',
+        e.status || 405,
+      ));
+    }
+  },
+);
+{{/operation}}
+{{/operations}}
+
+module.exports = {
+  {{#operations}}
+  {{#operation}}
+  {{operationId}},
+  {{/operation}}
+  {{/operations}}
+};

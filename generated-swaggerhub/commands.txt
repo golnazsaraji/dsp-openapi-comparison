@@ -1,0 +1,11 @@
+in the root: 
+
+node scripts/patch-swaggerhub.js
+
+cd generated-swaggerhub
+npm start
+
+
+http://localhost:8080/films
+http://localhost:8080/films/1
+http://localhost:8080/api-docs

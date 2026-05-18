@@ -4,15 +4,15 @@ const filmsGET = async () => {
     return FilmService.getFilms();
 };
 
-const filmsIdGET = async ({ id }) => {
+const filmsIdGET = async (id) => {
     return FilmService.getFilmById(id);
 };
 
-const filmsPOST = async ({ newFilm }) => {
+const filmsPOST = async (newFilm) => {
     return FilmService.createFilm(newFilm);
 };
 
-const filmsIdDELETE = async ({ id }) => {
+const filmsIdDELETE = async (id) => {
     return FilmService.deleteFilm(id);
 };
 

@@ -103,3 +103,110 @@ These documents describe the observations about SwaggerHub, the runtime tests, t
 This is a first complete project draft for the comparison experiment. The repository contains the source API contract, both generated server stubs, the shared handwritten service layer, adapter integrations, patch scripts, and written analysis.
 
 Useful feedback on this version would be whether the experimental comparison is sufficiently clear, whether the regeneration-safe architecture is convincing, and whether additional tests or metrics should be added to strengthen the evaluation.
+
+
+# Regeneration-Safe Architecture
+
+## Objective
+
+The objective of this project is to investigate whether OpenAPI-based code generation tools can support a clean separation between generated API code and handwritten business logic.
+
+A particular focus of the project is regeneration safety: after modifying the OpenAPI specification and regenerating the API layer, handwritten implementation code should not be overwritten.
+
+---
+
+# Project Structure
+
+```text
+dsp-openapi-comparison/
+├── openapi/
+├── generated-openapi-generator/
+├── generated-openapi-generator-custom/
+├── generated-swaggerhub/
+├── adapters/
+├── shared-services/
+├── out/
+├── scripts/
+└── docs/
+
+```
+
+Architecture
+
+The project uses the following layered architecture:
+
+OpenAPI Specification
+        ↓
+Generated API Layer
+        ↓
+Adapter Layer
+        ↓
+Shared Handwritten Services
+
+The handwritten business logic is intentionally isolated inside:
+
+shared-services/
+
+The generated API layer delegates requests to adapter modules, which connect the generated server stubs with the handwritten implementation.
+
+This approach minimizes coupling between generated code and handwritten business logic.
+
+OpenAPI Generator Workflow
+Standard Generation
+openapi-generator-cli generate \
+-i openapi/openapi.yaml \
+-g nodejs-express-server \
+-o generated-openapi-generator
+Template Extraction
+openapi-generator-cli author template -g nodejs-express-server
+
+This command extracts the internal generator templates into the out/ directory.
+
+Customized Generation
+openapi-generator-cli generate \
+-i openapi/openapi.yaml \
+-g nodejs-express-server \
+-t out \
+-o generated-openapi-generator-custom
+
+The -t out option instructs OpenAPI Generator to use the customized templates stored in the out/ directory.
+
+Custom Template Strategy
+
+The default generated services originally returned placeholder responses such as:
+
+resolve(Service.successResponse({}));
+
+The service.mustache template was customized so that generated services automatically delegate to the external adapter layer:
+
+const result = await DefaultServiceAdapter.{{operationId}}(...);
+resolve(Service.successResponse(result));
+
+This removes the need for post-generation patch scripts.
+
+Runtime Verification
+
+The customized generated server was successfully executed.
+
+The following endpoints were verified:
+
+GET /films
+GET /films/1
+GET /status
+
+The responses were successfully produced by the handwritten implementation stored in shared-services/.
+
+Current Conclusions
+
+The experiments suggest that:
+
+OpenAPI Generator does not directly expose built-in configuration options for handwritten/generated code separation.
+Post-generation patching is possible but difficult to maintain for larger projects.
+Template customization provides a more scalable and regeneration-safe approach.
+Local automated generation workflows are preferable to manual web-based workflows.
+
+Further investigation may include:
+
+additional generators,
+advanced template customization,
+and comparison with alternative OpenAPI-related tools.

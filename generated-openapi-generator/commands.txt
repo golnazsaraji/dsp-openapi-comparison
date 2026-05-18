@@ -1,0 +1,10 @@
+in the root: 
+openapi-generator-cli generate -i openapi/openapi.yaml -g nodejs-express-server -o generated-openapi-generator
+node scripts/patch-openapi-generator.js
+
+cd generated-openapi-generator
+npm start
+
+http://localhost:3000/films
+http://localhost:3000/films/1
+http://localhost:3000/status
