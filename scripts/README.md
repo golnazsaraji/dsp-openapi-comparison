@@ -1,10 +1,10 @@
 # Scripts
 
-This directory contains helper scripts used during the regeneration experiment.
+This directory contains helper scripts used during earlier regeneration experiments.
 
 ## Contents
 
 - `patch-openapi-generator.js`: rewrites the generated OpenAPI Generator service file so it delegates to `adapters/openapi-generator/DefaultServiceAdapter.js`.
 - `patch-swaggerhub.js`: rewrites the generated SwaggerHub service file so it delegates to `adapters/swaggerhub/DefaultServiceAdapter.js`.
 
-These scripts are needed because generated service files can be overwritten during regeneration. Running the correct patch script after regeneration restores the connection between generated code and handwritten business logic.
+These scripts are kept as historical examples. The final OpenAPI Generator workflow uses customized templates so regenerated services delegate to the adapter layer without a post-generation patch step.

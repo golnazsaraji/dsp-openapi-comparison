@@ -18,7 +18,7 @@ For this reason, this project separates:
 - handwritten business logic
 - adapter code that connects generated services to handwritten services
 - custom template generation strategies
-- optional experimental patch scripts used during earlier experiments
+- optional experimental patch scripts kept as historical examples
 
 The experiment shows that handwritten logic should not be placed directly inside generated files. Instead, it should live outside the generated folders and be connected through adapters and customized generation templates.
 
@@ -31,7 +31,7 @@ The experiment shows that handwritten logic should not be placed directly inside
 | `generated-swaggerhub/` | Contains the Node.js server stub generated from SwaggerHub / Swagger Codegen. |
 | `shared-services/` | Contains handwritten business logic shared by both generated servers. |
 | `adapters/` | Contains adapter layers that translate generated service calls into calls to the shared handwritten services. |
-| `scripts/` | Contains post-generation patch scripts used to reconnect regenerated code to the adapters. |
+| `scripts/` | Contains experimental patch scripts from earlier regeneration experiments. |
 | `docs/` | Contains the written analysis and experimental comparison notes. |
 
 Each directory also contains its own `README.md` with a more specific explanation of its contents.
@@ -69,6 +69,7 @@ To run the SwaggerHub / Swagger Codegen version:
 cd generated-swaggerhub
 npm start
 ```
+
 The generated projects may use different ports depending on the generator configuration.
 
 During the experiments:
@@ -76,23 +77,23 @@ During the experiments:
 - OpenAPI Generator was executed on port `3000`
 - SwaggerHub / Swagger Codegen was executed on port `8080`
 
-## Patch Workflow
+## Simplified Regeneration Workflow
 
-After regenerating a server stub, generated service files may be overwritten. The project includes patch scripts that restore the connection to the external adapter layer.
+The final workflow no longer relies on post-generation patch scripts.
 
-For OpenAPI Generator:
+Instead, OpenAPI Generator templates are customized so that the generated services automatically delegate requests to the adapter layer.
 
-```bash
-node scripts/patch-openapi-generator.js
+The root `package.json` contains helper scripts that simplify regeneration:
+
+```json
+{
+  "scripts": {
+    "regenerate": "openapi-generator-cli generate -i openapi/openapi.yaml -g nodejs-express-server -t out -o generated-openapi-generator-custom",
+    "install:custom": "cd generated-openapi-generator-custom && npm install",
+    "start:custom": "cd generated-openapi-generator-custom && npm start"
+  }
+}
 ```
-
-For SwaggerHub / Swagger Codegen:
-
-```bash
-node scripts/patch-swaggerhub.js
-```
-
-These scripts are part of the experiment because they demonstrate one practical strategy for keeping handwritten code outside generated files while still allowing repeated regeneration.
 
 ## Documentation
 
@@ -102,18 +103,18 @@ The main written analysis is in:
 - `docs/02-experimental-comparison.md`
 - `docs/03-openapi-generator-options-analysis.md`
 
-These documents describe the observations about SwaggerHub, the runtime tests, the regeneration experiment, and the final symmetric adapter/patch architecture.
+These documents describe the observations about SwaggerHub, the runtime tests, the regeneration experiment, and the final adapter/template architecture.
 
 ## Current Status
 
-This is a first complete project draft for the comparison experiment. The repository contains the source API contract, both generated server stubs, the shared handwritten service layer, adapter integrations, patch scripts, and written analysis.
+This is a first complete project draft for the comparison experiment. The repository contains the source API contract, both generated server stubs, the shared handwritten service layer, adapter integrations, customized OpenAPI Generator templates, historical patch scripts, and written analysis.
 
 Useful feedback on this version would be whether the experimental comparison is sufficiently clear, whether the regeneration-safe architecture is convincing, and whether additional tests or metrics should be added to strengthen the evaluation.
 
 
-# Regeneration-Safe Architecture
+## Regeneration-Safe Architecture
 
-## Objective
+### Objective
 
 The objective of this project is to investigate whether OpenAPI-based code generation tools can support a clean separation between generated API code and handwritten business logic.
 
@@ -121,7 +122,7 @@ A particular focus of the project is regeneration safety: after modifying the Op
 
 ---
 
-# Project Structure
+## Project Structure
 
 ```text
 dsp-openapi-comparison/
@@ -169,6 +170,7 @@ The generated API layer delegates requests to adapter modules, which connect the
 This approach minimizes coupling between generated code and handwritten business logic.
 
 ## OpenAPI Generator Workflow
+
 ### Standard Generation
 
 ```text
