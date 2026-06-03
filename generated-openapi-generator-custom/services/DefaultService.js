@@ -7,13 +7,14 @@ const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultS
 *
 * returns List
 * */
-const filmsGET = () => new Promise(
+const filmsGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const result = await DefaultServiceAdapter.filmsGET(
+
+       const result = await DefaultServiceAdapter.filmsGET(
       );
 
-     resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -28,14 +29,15 @@ const filmsGET = () => new Promise(
 * id Integer 
 * no response value expected for this operation
 * */
-const filmsIdDELETE = ({ id }) => new Promise(
+const filmsIdDELETE = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const result = await DefaultServiceAdapter.filmsIdDELETE(
-          id,
+
+       const result = await DefaultServiceAdapter.filmsIdDELETE(
+          params.id,
       );
 
-     resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -50,14 +52,15 @@ const filmsIdDELETE = ({ id }) => new Promise(
 * id Integer 
 * returns Film
 * */
-const filmsIdGET = ({ id }) => new Promise(
+const filmsIdGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const result = await DefaultServiceAdapter.filmsIdGET(
-          id,
+
+       const result = await DefaultServiceAdapter.filmsIdGET(
+          params.id,
       );
 
-     resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -72,14 +75,15 @@ const filmsIdGET = ({ id }) => new Promise(
 * newFilm NewFilm 
 * returns Film
 * */
-const filmsPOST = ({ newFilm }) => new Promise(
+const filmsPOST = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const result = await DefaultServiceAdapter.filmsPOST(
-          newFilm,
+
+       const result = await DefaultServiceAdapter.filmsPOST(
+          params.newFilm || params.body || params,
       );
 
-     resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -93,13 +97,14 @@ const filmsPOST = ({ newFilm }) => new Promise(
 *
 * returns Status
 * */
-const statusGET = () => new Promise(
+const statusGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const result = await DefaultServiceAdapter.statusGET(
+
+       const result = await DefaultServiceAdapter.statusGET(
       );
 
-     resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',

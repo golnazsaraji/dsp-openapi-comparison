@@ -231,3 +231,162 @@ The earlier patch-based approach should be considered only a proof of concept.
 The custom template approach is a stronger solution because it addresses the regeneration problem at the generator customization level rather than through post-processing.
 
 Therefore, for OpenAPI Generator, the recommended direction is to continue with customized templates instead of patch scripts.
+
+
+# Validation of Template-Based Regeneration
+
+## Objective
+
+After implementing the custom `service.mustache` template, the objective was to verify that API regeneration would preserve the handwritten business logic integration without requiring any post-generation patching.
+
+---
+
+## Initial Problem
+
+The generated service layer originally delegated requests using the default generated implementation.
+
+A previous solution relied on post-generation patch scripts to reconnect the generated services to the handwritten adapter layer.
+
+This approach had several drawbacks:
+
+- Additional maintenance effort
+- Manual execution after regeneration
+- Poor scalability for larger projects
+- Tight coupling to generated source code
+
+Based on project feedback, a more robust solution was required.
+
+---
+
+## Template Customization
+
+The OpenAPI Generator templates were extracted using:
+
+```bash
+openapi-generator-cli author template -g nodejs-express-server
+```
+
+The `service.mustache` template was then modified so that generated services directly delegate requests to the adapter layer.
+
+Instead of relying on the default generated implementation, generated operations now invoke:
+
+```js
+DefaultServiceAdapter.{{operationId}}(...)
+```
+
+This removes the need for any post-generation patching.
+
+---
+
+## POST Endpoint Validation
+
+During testing, the following endpoint initially failed:
+
+```http
+POST /films
+```
+
+Request body:
+
+```json
+{
+  "title": "Inception"
+}
+```
+
+Initial error:
+
+```text
+Cannot read properties of undefined (reading 'title')
+```
+
+---
+
+## Root Cause Analysis
+
+The generated service originally used:
+
+```js
+const filmsPOST = ({ newFilm }) => ...
+```
+
+while the customized delegation logic expected a different parameter structure.
+
+As a result, the adapter received an undefined value instead of the request body.
+
+---
+
+## Final Solution
+
+The template was updated to generate:
+
+```js
+const filmsPOST = (params = {}) => ...
+```
+
+and body parameters are now forwarded using:
+
+```js
+params.newFilm || params.body || params
+```
+
+This approach supports the generated parameter structure while preserving adapter-based delegation.
+
+---
+
+## Regeneration Validation
+
+The following regeneration command was executed:
+
+```bash
+openapi-generator-cli generate \
+-i openapi/openapi.yaml \
+-g nodejs-express-server \
+-t out \
+-o generated-openapi-generator-custom
+```
+
+After regeneration:
+
+- GET /films worked correctly
+- GET /films/{id} worked correctly
+- POST /films successfully created new records
+- Adapter delegation remained intact
+- No patch script execution was required
+
+Example successful request:
+
+```http
+POST /films
+```
+
+```json
+{
+  "title": "Movie Test"
+}
+```
+
+Successful response:
+
+```json
+{
+  "id": 2,
+  "title": "Movie Test"
+}
+```
+
+---
+
+## Conclusion
+
+The template-based solution successfully replaces the previous patch-based approach.
+
+The handwritten business logic remains isolated in:
+
+```text
+shared-services/
+```
+
+while regeneration can be performed repeatedly without modifying generated files manually.
+
+The solution demonstrates a regeneration-safe architecture based on OpenAPI Generator template customization rather than post-generation source code patching.

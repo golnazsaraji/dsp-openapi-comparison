@@ -22,16 +22,22 @@ const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultS
 * returns {{{.}}}
 {{/returnType}}
 * */
-const {{{operationId}}} = ({{#allParams}}{{#-first}}{ {{/-first}}{{paramName}}{{^-last}}, {{/-last}}{{#-last}} }{{/-last}}{{/allParams}}) => new Promise(
+const {{operationId}} = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const result = await DefaultServiceAdapter.{{operationId}}(
-        {{#allParams}}
-          {{paramName}},
-        {{/allParams}}
+
+       const result = await DefaultServiceAdapter.{{operationId}}(
+      {{#allParams}}
+        {{#isBodyParam}}
+          params.{{paramName}} || params.body || params,
+        {{/isBodyParam}}
+        {{^isBodyParam}}
+          params.{{paramName}},
+        {{/isBodyParam}}
+      {{/allParams}}
       );
 
-     resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
