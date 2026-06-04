@@ -1,121 +1,622 @@
-openapi: 3.0.0
-
+openapi: 3.0.3
 info:
-  title: DSP Film API
-  version: 1.0.0
-  description: API used to compare OpenAPI Generator and SwaggerHub server stub generation.
-
+  title: DSP Film Manager API
+  version: 0.1.0
+  description: Shared Film Manager service contract for DSP laboratory work.
 servers:
-  - url: http://localhost:3000
-
+  - url: /
+tags:
+  - name: sessions
+  - name: public-films
+  - name: films
+  - name: reviews
+  - name: images
+  - name: realtime
 paths:
-  /films:
+  /health:
     get:
-      summary: Get all films
-      operationId: filmsGET
+      summary: Health check
+      operationId: healthGET
       responses:
         '200':
-          description: List of films
+          description: Service is running
+  /api/sessions:
+    post:
+      tags: [sessions]
+      summary: Login with email and password
+      operationId: sessionsPOST
+      requestBody:
+        x-codegen-request-body-name: loginRequest
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '201':
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Error'
+  /api/sessions/current:
+    get:
+      tags: [sessions]
+      summary: Get current authenticated user
+      operationId: sessionsCurrentGET
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [sessions]
+      summary: Logout
+      operationId: sessionsCurrentDELETE
+      responses:
+        '204':
+          description: Logged out
+  /api/users/online:
+    get:
+      tags: [realtime]
+      summary: Get current WebSocket online snapshot
+      operationId: usersOnlineGET
+      responses:
+        '200':
+          description: Online users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OnlineUser'
+  /api/films/public:
+    get:
+      tags: [public-films]
+      summary: List public films
+      operationId: filmsPublicGET
+      responses:
+        '200':
+          description: Public films
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Film'
-
+  /api/films/public/{filmId}:
+    get:
+      tags: [public-films]
+      summary: Get a public film
+      operationId: filmsPublicFilmIdGET
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+      responses:
+        '200':
+          description: Public film
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Film'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/films/public/{filmId}/reviews:
+    get:
+      tags: [public-films, reviews]
+      summary: List reviews for a public film
+      operationId: filmsPublicFilmIdReviewsGET
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+      responses:
+        '200':
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/films/public/{filmId}/reviews/{reviewerId}:
+    get:
+      tags: [public-films, reviews]
+      summary: Get one public review
+      operationId: filmsPublicFilmIdReviewsReviewerIdGET
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+        - $ref: '#/components/parameters/ReviewerId'
+      responses:
+        '200':
+          description: Review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/films:
+    get:
+      tags: [films]
+      security:
+        - cookieAuth: []
+      summary: List films owned by the current user
+      operationId: filmsGET
+      responses:
+        '200':
+          description: Owned films
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Film'
+        '401':
+          $ref: '#/components/responses/Error'
     post:
-      summary: Create a new film
+      tags: [films]
+      security:
+        - cookieAuth: []
+      summary: Create a film
       operationId: filmsPOST
       requestBody:
+        x-codegen-request-body-name: filmInput
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewFilm'
+              $ref: '#/components/schemas/FilmInput'
       responses:
         '201':
-          description: Film created
+          description: Created film
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Film'
-
-  /films/{id}:
+        '401':
+          $ref: '#/components/responses/Error'
+  /api/films/to-review:
     get:
-      summary: Get film by id
-      operationId: filmsIdGET
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      tags: [films, reviews]
+      security:
+        - cookieAuth: []
+      summary: List films assigned to the current reviewer
+      operationId: filmsToReviewGET
       responses:
         '200':
-          description: Film found
+          description: Films to review
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Film'
+  /api/films/{filmId}:
+    get:
+      tags: [films]
+      security:
+        - cookieAuth: []
+      summary: Get an accessible film
+      operationId: filmsFilmIdGET
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+      responses:
+        '200':
+          description: Film
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Film'
         '404':
-          description: Film not found
-
-    delete:
-      summary: Delete film by id
-      operationId: filmsIdDELETE
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [films]
+      security:
+        - cookieAuth: []
+      summary: Update an owned film without changing visibility
+      operationId: filmsFilmIdPUT
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/FilmId'
+      requestBody:
+        x-codegen-request-body-name: filmInput
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilmInput'
+      responses:
+        '200':
+          description: Updated film
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Film'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [films]
+      security:
+        - cookieAuth: []
+      summary: Delete an owned film
+      operationId: filmsFilmIdDELETE
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
       responses:
         '204':
-          description: Film deleted
-        '404':
-          description: Film not found
-
-  /status:
-    get:
-      summary: API status
-      operationId: statusGET
+          description: Deleted
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/films/{filmId}/reviews:
+    post:
+      tags: [reviews]
+      security:
+        - cookieAuth: []
+      summary: Invite a reviewer to a public owned film
+      operationId: filmsFilmIdReviewsPOST
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+      requestBody:
+        x-codegen-request-body-name: reviewInvitation
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInvitation'
       responses:
-        '200':
-          description: API status
+        '201':
+          description: Review invitation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
-
+                $ref: '#/components/schemas/Review'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/films/{filmId}/reviews/{reviewerId}:
+    delete:
+      tags: [reviews]
+      security:
+        - cookieAuth: []
+      summary: Remove an incomplete review invitation
+      operationId: filmsFilmIdReviewsReviewerIdDELETE
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+        - $ref: '#/components/parameters/ReviewerId'
+      responses:
+        '204':
+          description: Removed
+        '409':
+          $ref: '#/components/responses/Error'
+  /api/films/{filmId}/reviews/current:
+    put:
+      tags: [reviews]
+      security:
+        - cookieAuth: []
+      summary: Complete the current user's review
+      operationId: filmsFilmIdReviewsCurrentPUT
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+      requestBody:
+        x-codegen-request-body-name: reviewCompletion
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCompletion'
+      responses:
+        '200':
+          description: Completed review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+  /api/films/{filmId}/active:
+    put:
+      tags: [films, realtime]
+      security:
+        - cookieAuth: []
+      summary: Select a public review film as active
+      operationId: filmsFilmIdActivePUT
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+      responses:
+        '200':
+          description: Active review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+  /api/users/current/active-film:
+    delete:
+      tags: [films, realtime]
+      security:
+        - cookieAuth: []
+      summary: Clear the current user's active film
+      operationId: usersCurrentActiveFilmDELETE
+      responses:
+        '204':
+          description: Active film cleared
+  /api/films/{filmId}/images:
+    get:
+      tags: [images]
+      security:
+        - cookieAuth: []
+      summary: List images for a public owned/review film
+      operationId: filmsFilmIdImagesGET
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+      responses:
+        '200':
+          description: Image metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Image'
+    post:
+      tags: [images]
+      security:
+        - cookieAuth: []
+      summary: Upload an image for a public owned film
+      operationId: filmsFilmIdImagesPOST
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Created image metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+  /api/films/{filmId}/images/{imageId}:
+    get:
+      tags: [images]
+      security:
+        - cookieAuth: []
+      summary: Get image metadata or bytes using content negotiation
+      operationId: filmsFilmIdImagesImageIdGET
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+        - $ref: '#/components/parameters/ImageId'
+      responses:
+        '200':
+          description: Image metadata or image bytes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+        '406':
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [images]
+      security:
+        - cookieAuth: []
+      summary: Delete an image from a public owned film
+      operationId: filmsFilmIdImagesImageIdDELETE
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+        - $ref: '#/components/parameters/ImageId'
+      responses:
+        '204':
+          description: Deleted
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: connect-sid
+  parameters:
+    FilmId:
+      name: filmId
+      in: path
+      required: true
+      schema:
+        type: integer
+    ReviewerId:
+      name: reviewerId
+      in: path
+      required: true
+      schema:
+        type: integer
+    ImageId:
+      name: imageId
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
-    Film:
+    Error:
       type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    User:
+      type: object
+      required: [id, name, email, self]
       properties:
         id:
           type: integer
-          example: 1
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        self:
+          type: string
+    Film:
+      type: object
+      required: [id, title, ownerId, public, favorite, self]
+      properties:
+        id:
+          type: integer
         title:
           type: string
-          example: Interstellar
-      required:
-        - id
-        - title
-
-    NewFilm:
+        ownerId:
+          type: integer
+        public:
+          type: boolean
+        watchDate:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 5
+        favorite:
+          type: boolean
+        self:
+          type: string
+    FilmInput:
       type: object
+      required: [title, public]
       properties:
         title:
           type: string
-          example: Inception
-      required:
-        - title
-
-    Status:
+        public:
+          type: boolean
+        watchDate:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 5
+        favorite:
+          type: boolean
+    Review:
       type: object
+      required: [filmId, reviewerId, completed, active, self]
+      properties:
+        filmId:
+          type: integer
+        reviewerId:
+          type: integer
+        completed:
+          type: boolean
+        reviewDate:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+        reviewer:
+          $ref: '#/components/schemas/User'
+        self:
+          type: string
+    ReviewCompletion:
+      type: object
+      properties:
+        reviewDate:
+          type: string
+        rating:
+          type: integer
+          minimum: 0
+          maximum: 5
+        description:
+          type: string
+    ReviewInvitation:
+      type: object
+      required: [reviewerId]
+      properties:
+        reviewerId:
+          type: integer
+    Image:
+      type: object
+      required: [id, filmId, name, mediaType, self]
+      properties:
+        id:
+          type: integer
+        filmId:
+          type: integer
+        name:
+          type: string
+        mediaType:
+          type: string
+          enum: [image/png, image/jpeg, image/jpg, image/gif]
+        self:
+          type: string
+    OnlineUser:
+      type: object
+      required: [userId, userName]
+      properties:
+        userId:
+          type: integer
+        userName:
+          type: string
+        filmId:
+          type: integer
+          nullable: true
+        filmTitle:
+          type: string
+          nullable: true
+    MqttFilmMessage:
+      type: object
+      required: [status]
       properties:
         status:
           type: string
-          example: ok
-      required:
-        - status
+          enum: [active, inactive, deleted]
+        userId:
+          type: string
+        userName:
+          type: string

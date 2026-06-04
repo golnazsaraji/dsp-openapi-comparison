@@ -1,0 +1,528 @@
+{
+  "info": {
+    "_postman_id": "2bdf8e56-4f85-4dbf-ae9c-dsp-film-manager",
+    "name": "DSP Film Manager API",
+    "description": "Postman collection for testing the generated Film Manager API after regeneration. Start the generated custom server first with `npm run start:custom` from the project root.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "publicFilmId",
+      "value": "1"
+    },
+    {
+      "key": "publicReviewFilmId",
+      "value": "1"
+    },
+    {
+      "key": "publicReviewerId",
+      "value": "2"
+    },
+    {
+      "key": "reviewFilmId",
+      "value": "2"
+    },
+    {
+      "key": "reviewerId",
+      "value": "3"
+    },
+    {
+      "key": "createdFilmId",
+      "value": ""
+    },
+    {
+      "key": "createdImageId",
+      "value": ""
+    },
+    {
+      "key": "runImageUpload",
+      "value": "false"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health and Docs",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health is ok', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OpenAPI YAML",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/openapi"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "item": [
+        {
+          "name": "Login as Frank",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"frank@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": "{{baseUrl}}/api/sessions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login succeeds', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  pm.expect(pm.response.json().email).to.eql('frank@example.com');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Current session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/sessions/current"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('current session is Frank', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().email).to.eql('frank@example.com');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Public Films",
+      "item": [
+        {
+          "name": "List public films",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/public"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('public films returned', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get public film",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/public/{{publicFilmId}}"
+          }
+        },
+        {
+          "name": "List public film reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/public/{{publicReviewFilmId}}/reviews"
+          }
+        },
+        {
+          "name": "Get public film review",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/public/{{publicReviewFilmId}}/reviews/{{publicReviewerId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Films",
+      "description": "Run Login as Frank before these authenticated requests.",
+      "item": [
+        {
+          "name": "List owned films",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films"
+          }
+        },
+        {
+          "name": "List films to review",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/to-review"
+          }
+        },
+        {
+          "name": "Get owned/accesssible film",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/{{publicFilmId}}"
+          }
+        },
+        {
+          "name": "Select active film",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/{{reviewFilmId}}/active"
+          }
+        },
+        {
+          "name": "Create public film",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Film\",\n  \"public\": true,\n  \"watchDate\": \"2026-06-04\",\n  \"rating\": 4,\n  \"favorite\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/films"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('film created', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const film = pm.response.json();",
+                  "  pm.expect(film.id).to.exist;",
+                  "  pm.collectionVariables.set('createdFilmId', String(film.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update created film",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Film Updated\",\n  \"public\": true,\n  \"watchDate\": \"2026-06-04\",\n  \"rating\": 5,\n  \"favorite\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/films/{{createdFilmId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "description": "Create a public film first so createdFilmId is available.",
+      "item": [
+        {
+          "name": "Invite reviewer to created film",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewerId\": 3\n}"
+            },
+            "url": "{{baseUrl}}/api/films/{{createdFilmId}}/reviews"
+          }
+        },
+        {
+          "name": "Remove review invitation",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/{{createdFilmId}}/reviews/3"
+          }
+        },
+        {
+          "name": "Complete current user's review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewDate\": \"2026-06-04\",\n  \"rating\": 5,\n  \"description\": \"Reviewed from Postman.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/films/{{reviewFilmId}}/reviews/current"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Images",
+      "description": "For upload, choose a local PNG, JPG, or GIF file in the Postman file picker.",
+      "item": [
+        {
+          "name": "List images",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/{{publicFilmId}}/images"
+          }
+        },
+        {
+          "name": "Upload image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/films/{{publicFilmId}}/images"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runImageUpload') !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const image = pm.response.json();",
+                  "  if (image.id) pm.collectionVariables.set('createdImageId', String(image.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get image metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/films/{{publicFilmId}}/images/{{createdImageId}}"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runImageUpload') !== 'true' || !pm.collectionVariables.get('createdImageId')) {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete image",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/{{publicFilmId}}/images/{{createdImageId}}"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runImageUpload') !== 'true' || !pm.collectionVariables.get('createdImageId')) {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Realtime Status",
+      "item": [
+        {
+          "name": "Online users snapshot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/online"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Conflict Scenario",
+      "description": "Run after Frank selected film 2 as active.",
+      "item": [
+        {
+          "name": "Login as Karen",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"karen@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": "{{baseUrl}}/api/sessions"
+          }
+        },
+        {
+          "name": "Try selecting Frank's active film",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/{{reviewFilmId}}/active"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('conflict is detected', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "description": "Run last. The conflict scenario logs in as Karen, so cleanup logs Frank back in before deleting Frank-owned data.",
+      "item": [
+        {
+          "name": "Login as Frank",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"frank@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": "{{baseUrl}}/api/sessions"
+          }
+        },
+        {
+          "name": "Delete created film",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/{{createdFilmId}}"
+          }
+        },
+        {
+          "name": "Clear active film",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/current/active-film"
+          }
+        }
+      ]
+    }
+  ]
+}

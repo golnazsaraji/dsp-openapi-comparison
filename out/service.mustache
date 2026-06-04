@@ -25,8 +25,7 @@ const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultS
 const {{operationId}} = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-
-       const result = await DefaultServiceAdapter.{{operationId}}(
+      const result = await DefaultServiceAdapter.{{operationId}}(
       {{#allParams}}
         {{#isBodyParam}}
           params.{{paramName}} || params.body || params,

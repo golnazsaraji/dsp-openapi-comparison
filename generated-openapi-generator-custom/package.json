@@ -1,7 +1,7 @@
 {
-  "name":  "dsp-film-api",
-  "version": "1.0.0",
-  "description": "API used to compare OpenAPI Generator and SwaggerHub server stub generation.",
+  "name":  "dsp-film-manager-api",
+  "version": "0.1.0",
+  "description": "Shared Film Manager service contract for DSP laboratory work.",
   "main": "index.js",
   "scripts": {
     "prestart": "npm install",

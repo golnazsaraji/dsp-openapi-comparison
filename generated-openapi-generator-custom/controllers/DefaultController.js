@@ -8,31 +8,11 @@
 
 const Controller = require('./Controller');
 const service = require('../services/DefaultService');
-const filmsGET = async (request, response) => {
-  await Controller.handleRequest(request, response, service.filmsGET);
-};
-
-const filmsIdDELETE = async (request, response) => {
-  await Controller.handleRequest(request, response, service.filmsIdDELETE);
-};
-
-const filmsIdGET = async (request, response) => {
-  await Controller.handleRequest(request, response, service.filmsIdGET);
-};
-
-const filmsPOST = async (request, response) => {
-  await Controller.handleRequest(request, response, service.filmsPOST);
-};
-
-const statusGET = async (request, response) => {
-  await Controller.handleRequest(request, response, service.statusGET);
+const healthGET = async (request, response) => {
+  await Controller.handleRequest(request, response, service.healthGET);
 };
 
 
 module.exports = {
-  filmsGET,
-  filmsIdDELETE,
-  filmsIdGET,
-  filmsPOST,
-  statusGET,
+  healthGET,
 };

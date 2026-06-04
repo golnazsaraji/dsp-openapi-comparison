@@ -32,25 +32,36 @@ The experiment shows that handwritten logic should not be placed directly inside
 | `shared-services/` | Contains handwritten business logic shared by both generated servers. |
 | `adapters/` | Contains adapter layers that translate generated service calls into calls to the shared handwritten services. |
 | `scripts/` | Contains experimental patch scripts from earlier regeneration experiments. |
+| `postman/` | Contains a Postman collection for manual API testing after regeneration. |
 | `docs/` | Contains the written analysis and experimental comparison notes. |
 
 Each directory also contains its own `README.md` with a more specific explanation of its contents.
 
 ## API Used in the Experiment
 
-The example API is a small film API with the following operations:
+The canonical API is now the DSP Film Manager service derived from the laboratory
+specifications. It is intentionally larger than the first sample API so the experiment can
+evaluate regeneration safety on a more realistic service.
 
-- `GET /films`
-- `POST /films`
-- `GET /films/{id}`
-- `DELETE /films/{id}`
-- `GET /status`
+The API includes:
+
+- session login and current-session inspection
+- public film listing and public film details
+- public film review listing and individual public reviews
+- authenticated owned-film CRUD
+- reviewer invitations and review completion
+- active-film selection, including conflict detection when two users select the same film
+- image metadata endpoints for public films
+- online/active-film status surfaces used by the realtime labs
 
 The canonical specification is stored in:
 
 ```text
 openapi/openapi.yaml
 ```
+
+The generated folders currently represent generated artifacts and may be regenerated
+from this contract when comparing generator behavior for the larger API surface.
 
 ## Running the Generated Servers
 
@@ -83,17 +94,77 @@ The final workflow no longer relies on post-generation patch scripts.
 
 Instead, OpenAPI Generator templates are customized so that the generated services automatically delegate requests to the adapter layer.
 
-The root `package.json` contains helper scripts that simplify regeneration:
+## Why Testing Is Easier Now
+
+Before, checking whether regeneration preserved the handwritten logic required a manual process:
+
+1. regenerate the server;
+2. install dependencies;
+3. start the generated server;
+4. open Swagger UI or run curl commands manually;
+5. test GET, POST, PUT, and DELETE endpoints one by one;
+6. remember which credentials, film ids, and cookies to use.
+
+Now the project has a single main regeneration-and-run command. The generated server
+still passes requests through this architecture:
+
+```text
+Generated API Layer
+        ↓
+Adapter Layer
+        ↓
+Shared Services
+```
+
+The main command is:
+
+```bash
+npm start
+```
+
+This command regenerates the custom OpenAPI Generator server, installs its dependencies,
+and leaves the server running for Postman or manual curl checks.
+
+If port `3000` is busy, use:
+
+```bash
+PORT=3101 BASE_URL=http://localhost:3101 npm start
+```
+
+Smoke testing is now separate. After the server is running, use this in a second terminal:
+
+```bash
+npm test
+```
+
+If you started the server on another port, pass the same base URL:
+
+```bash
+BASE_URL=http://localhost:3101 npm test
+```
+
+The smoke test currently checks public reads, login, authenticated reads, POST creation, PUT update, DELETE operations, and the active-film conflict case. This gives a faster answer to the key project question: after regeneration, does the generated code still call the shared handwritten services correctly?
+
+For manual API exploration, a Postman collection is available in:
+
+```text
+postman/film-manager-api.postman_collection.json
+```
+
+The root `package.json` keeps the normal workflow intentionally small:
 
 ```json
 {
   "scripts": {
-    "regenerate": "openapi-generator-cli generate -i openapi/openapi.yaml -g nodejs-express-server -t out -o generated-openapi-generator-custom",
-    "install:custom": "cd generated-openapi-generator-custom && npm install",
-    "start:custom": "cd generated-openapi-generator-custom && npm start"
+    "start": "openapi-generator-cli generate -i openapi/openapi.yaml -g nodejs-express-server -t out -o generated-openapi-generator-custom && cd generated-openapi-generator-custom && npm install && npm start",
+    "test": "npm run smoke",
+    "smoke": "node scripts/smoke-custom.js"
   }
 }
 ```
+
+`smoke` is separate because it should be run after the server is already up, usually from
+a second terminal.
 
 ## Documentation
 
@@ -102,6 +173,7 @@ The main written analysis is in:
 - `docs/01-swaggerhub-analysis.md`
 - `docs/02-experimental-comparison.md`
 - `docs/03-openapi-generator-options-analysis.md`
+- `docs/04-service-url-reference.md`
 
 These documents describe the observations about SwaggerHub, the runtime tests, the regeneration experiment, and the final adapter/template architecture.
 

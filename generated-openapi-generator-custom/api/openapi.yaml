@@ -1,12 +1,210 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  description: API used to compare OpenAPI Generator and SwaggerHub server stub generation.
-  title: DSP Film API
-  version: 1.0.0
+  description: Shared Film Manager service contract for DSP laboratory work.
+  title: DSP Film Manager API
+  version: 0.1.0
 servers:
-- url: http://localhost:3000
+- url: /
+tags:
+- name: sessions
+- name: public-films
+- name: films
+- name: reviews
+- name: images
+- name: realtime
 paths:
-  /films:
+  /health:
+    get:
+      operationId: healthGET
+      responses:
+        "200":
+          description: Service is running
+      summary: Health check
+      x-eov-operation-handler: controllers/DefaultController
+  /api/sessions:
+    post:
+      operationId: sessionsPOST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+        x-codegen-request-body-name: loginRequest
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: Authenticated user
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      summary: Login with email and password
+      tags:
+      - sessions
+      x-eov-operation-handler: controllers/SessionsController
+  /api/sessions/current:
+    delete:
+      operationId: sessionsCurrentDELETE
+      responses:
+        "204":
+          description: Logged out
+      summary: Logout
+      tags:
+      - sessions
+      x-eov-operation-handler: controllers/SessionsController
+    get:
+      operationId: sessionsCurrentGET
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: Current user
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      summary: Get current authenticated user
+      tags:
+      - sessions
+      x-eov-operation-handler: controllers/SessionsController
+  /api/users/online:
+    get:
+      operationId: usersOnlineGET
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/OnlineUser"
+                type: array
+          description: Online users
+      summary: Get current WebSocket online snapshot
+      tags:
+      - realtime
+      x-eov-operation-handler: controllers/RealtimeController
+  /api/films/public:
+    get:
+      operationId: filmsPublicGET
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Film"
+                type: array
+          description: Public films
+      summary: List public films
+      tags:
+      - public-films
+      x-eov-operation-handler: controllers/PublicFilmsController
+  /api/films/public/{filmId}:
+    get:
+      operationId: filmsPublicFilmIdGET
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Film"
+          description: Public film
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      summary: Get a public film
+      tags:
+      - public-films
+      x-eov-operation-handler: controllers/PublicFilmsController
+  /api/films/public/{filmId}/reviews:
+    get:
+      operationId: filmsPublicFilmIdReviewsGET
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Review"
+                type: array
+          description: Reviews
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      summary: List reviews for a public film
+      tags:
+      - public-films
+      - reviews
+      x-eov-operation-handler: controllers/PublicFilmsController
+  /api/films/public/{filmId}/reviews/{reviewerId}:
+    get:
+      operationId: filmsPublicFilmIdReviewsReviewerIdGET
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - explode: false
+        in: path
+        name: reviewerId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+          description: Review
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      summary: Get one public review
+      tags:
+      - public-films
+      - reviews
+      x-eov-operation-handler: controllers/PublicFilmsController
+  /api/films:
     get:
       operationId: filmsGET
       responses:
@@ -17,50 +215,98 @@ paths:
                 items:
                   $ref: "#/components/schemas/Film"
                 type: array
-          description: List of films
-      summary: Get all films
-      x-eov-operation-handler: controllers/DefaultController
+          description: Owned films
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: List films owned by the current user
+      tags:
+      - films
+      x-eov-operation-handler: controllers/FilmsController
     post:
       operationId: filmsPOST
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NewFilm"
+              $ref: "#/components/schemas/FilmInput"
         required: true
+        x-codegen-request-body-name: filmInput
       responses:
         "201":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Film"
-          description: Film created
-      summary: Create a new film
-      x-eov-operation-handler: controllers/DefaultController
-  /films/{id}:
+          description: Created film
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: Create a film
+      tags:
+      - films
+      x-eov-operation-handler: controllers/FilmsController
+  /api/films/to-review:
+    get:
+      operationId: filmsToReviewGET
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Film"
+                type: array
+          description: Films to review
+      security:
+      - cookieAuth: []
+      summary: List films assigned to the current reviewer
+      tags:
+      - films
+      - reviews
+      x-eov-operation-handler: controllers/FilmsController
+  /api/films/{filmId}:
     delete:
-      operationId: filmsIdDELETE
+      operationId: filmsFilmIdDELETE
       parameters:
       - explode: false
         in: path
-        name: id
+        name: filmId
         required: true
         schema:
           type: integer
         style: simple
       responses:
         "204":
-          description: Film deleted
-        "404":
-          description: Film not found
-      summary: Delete film by id
-      x-eov-operation-handler: controllers/DefaultController
+          description: Deleted
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: Delete an owned film
+      tags:
+      - films
+      x-eov-operation-handler: controllers/FilmsController
     get:
-      operationId: filmsIdGET
+      operationId: filmsFilmIdGET
       parameters:
       - explode: false
         in: path
-        name: id
+        name: filmId
         required: true
         schema:
           type: integer
@@ -71,57 +317,631 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Film"
-          description: Film found
+          description: Film
         "404":
-          description: Film not found
-      summary: Get film by id
-      x-eov-operation-handler: controllers/DefaultController
-  /status:
-    get:
-      operationId: statusGET
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: Get an accessible film
+      tags:
+      - films
+      x-eov-operation-handler: controllers/FilmsController
+    put:
+      operationId: filmsFilmIdPUT
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FilmInput"
+        required: true
+        x-codegen-request-body-name: filmInput
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
-          description: API status
-      summary: API status
-      x-eov-operation-handler: controllers/DefaultController
+                $ref: "#/components/schemas/Film"
+          description: Updated film
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: Update an owned film without changing visibility
+      tags:
+      - films
+      x-eov-operation-handler: controllers/FilmsController
+  /api/films/{filmId}/reviews:
+    post:
+      operationId: filmsFilmIdReviewsPOST
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInvitation"
+        required: true
+        x-codegen-request-body-name: reviewInvitation
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+          description: Review invitation
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: Invite a reviewer to a public owned film
+      tags:
+      - reviews
+      x-eov-operation-handler: controllers/ReviewsController
+  /api/films/{filmId}/reviews/{reviewerId}:
+    delete:
+      operationId: filmsFilmIdReviewsReviewerIdDELETE
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - explode: false
+        in: path
+        name: reviewerId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "204":
+          description: Removed
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: Remove an incomplete review invitation
+      tags:
+      - reviews
+      x-eov-operation-handler: controllers/ReviewsController
+  /api/films/{filmId}/reviews/current:
+    put:
+      operationId: filmsFilmIdReviewsCurrentPUT
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewCompletion"
+        required: true
+        x-codegen-request-body-name: reviewCompletion
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+          description: Completed review
+      security:
+      - cookieAuth: []
+      summary: Complete the current user's review
+      tags:
+      - reviews
+      x-eov-operation-handler: controllers/ReviewsController
+  /api/films/{filmId}/active:
+    put:
+      operationId: filmsFilmIdActivePUT
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+          description: Active review
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: Select a public review film as active
+      tags:
+      - films
+      - realtime
+      x-eov-operation-handler: controllers/FilmsController
+  /api/users/current/active-film:
+    delete:
+      operationId: usersCurrentActiveFilmDELETE
+      responses:
+        "204":
+          description: Active film cleared
+      security:
+      - cookieAuth: []
+      summary: Clear the current user's active film
+      tags:
+      - films
+      - realtime
+      x-eov-operation-handler: controllers/FilmsController
+  /api/films/{filmId}/images:
+    get:
+      operationId: filmsFilmIdImagesGET
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Image"
+                type: array
+          description: Image metadata
+      security:
+      - cookieAuth: []
+      summary: List images for a public owned/review film
+      tags:
+      - images
+      x-eov-operation-handler: controllers/ImagesController
+    post:
+      operationId: filmsFilmIdImagesPOST
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/filmsFilmIdImagesPOST_request"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Image"
+          description: Created image metadata
+      security:
+      - cookieAuth: []
+      summary: Upload an image for a public owned film
+      tags:
+      - images
+      x-eov-operation-handler: controllers/ImagesController
+  /api/films/{filmId}/images/{imageId}:
+    delete:
+      operationId: filmsFilmIdImagesImageIdDELETE
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - explode: false
+        in: path
+        name: imageId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "204":
+          description: Deleted
+      security:
+      - cookieAuth: []
+      summary: Delete an image from a public owned film
+      tags:
+      - images
+      x-eov-operation-handler: controllers/ImagesController
+    get:
+      operationId: filmsFilmIdImagesImageIdGET
+      parameters:
+      - explode: false
+        in: path
+        name: filmId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - explode: false
+        in: path
+        name: imageId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Image"
+            image/png:
+              schema:
+                format: binary
+                type: string
+            image/jpeg:
+              schema:
+                format: binary
+                type: string
+            image/gif:
+              schema:
+                format: binary
+                type: string
+          description: Image metadata or image bytes
+        "406":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: Get image metadata or bytes using content negotiation
+      tags:
+      - images
+      x-eov-operation-handler: controllers/ImagesController
 components:
+  parameters:
+    FilmId:
+      explode: false
+      in: path
+      name: filmId
+      required: true
+      schema:
+        type: integer
+      style: simple
+    ReviewerId:
+      explode: false
+      in: path
+      name: reviewerId
+      required: true
+      schema:
+        type: integer
+      style: simple
+    ImageId:
+      explode: false
+      in: path
+      name: imageId
+      required: true
+      schema:
+        type: integer
+      style: simple
+  responses:
+    Error:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Error response
   schemas:
-    Film:
+    Error:
       example:
-        id: 1
-        title: Interstellar
+        error: error
+      properties:
+        error:
+          type: string
+      required:
+      - error
+      type: object
+    LoginRequest:
+      example:
+        password: password
+        email: email
+      properties:
+        email:
+          format: email
+          type: string
+        password:
+          format: password
+          type: string
+      required:
+      - email
+      - password
+      type: object
+    User:
+      example:
+        name: name
+        self: self
+        id: 0
+        email: email
       properties:
         id:
-          example: 1
+          type: integer
+        name:
+          type: string
+        email:
+          format: email
+          type: string
+        self:
+          type: string
+      required:
+      - email
+      - id
+      - name
+      - self
+      type: object
+    Film:
+      example:
+        watchDate: watchDate
+        public: true
+        rating: 0
+        self: self
+        id: 0
+        title: title
+        ownerId: 6
+        favorite: true
+      properties:
+        id:
           type: integer
         title:
-          example: Interstellar
+          type: string
+        ownerId:
+          type: integer
+        public:
+          type: boolean
+        watchDate:
+          nullable: true
+          type: string
+        rating:
+          maximum: 5
+          minimum: 0
+          nullable: true
+          type: integer
+        favorite:
+          type: boolean
+        self:
           type: string
       required:
+      - favorite
       - id
+      - ownerId
+      - public
+      - self
       - title
       type: object
-    NewFilm:
+    FilmInput:
       example:
-        title: Inception
+        watchDate: watchDate
+        public: true
+        rating: 0
+        title: title
+        favorite: true
       properties:
         title:
-          example: Inception
           type: string
+        public:
+          type: boolean
+        watchDate:
+          nullable: true
+          type: string
+        rating:
+          maximum: 5
+          minimum: 0
+          nullable: true
+          type: integer
+        favorite:
+          type: boolean
       required:
+      - public
       - title
       type: object
-    Status:
+    Review:
       example:
-        status: ok
+        reviewerId: 6
+        reviewDate: reviewDate
+        filmId: 0
+        rating: 1
+        description: description
+        active: true
+        self: self
+        completed: true
+        reviewer:
+          name: name
+          self: self
+          id: 0
+          email: email
+      properties:
+        filmId:
+          type: integer
+        reviewerId:
+          type: integer
+        completed:
+          type: boolean
+        reviewDate:
+          nullable: true
+          type: string
+        rating:
+          nullable: true
+          type: integer
+        description:
+          nullable: true
+          type: string
+        active:
+          type: boolean
+        reviewer:
+          $ref: "#/components/schemas/User"
+        self:
+          type: string
+      required:
+      - active
+      - completed
+      - filmId
+      - reviewerId
+      - self
+      type: object
+    ReviewCompletion:
+      example:
+        reviewDate: reviewDate
+        rating: 0
+        description: description
+      properties:
+        reviewDate:
+          type: string
+        rating:
+          maximum: 5
+          minimum: 0
+          type: integer
+        description:
+          type: string
+      type: object
+    ReviewInvitation:
+      example:
+        reviewerId: 0
+      properties:
+        reviewerId:
+          type: integer
+      required:
+      - reviewerId
+      type: object
+    Image:
+      example:
+        filmId: 6
+        name: name
+        self: self
+        mediaType: image/png
+        id: 0
+      properties:
+        id:
+          type: integer
+        filmId:
+          type: integer
+        name:
+          type: string
+        mediaType:
+          enum:
+          - image/png
+          - image/jpeg
+          - image/jpg
+          - image/gif
+          type: string
+        self:
+          type: string
+      required:
+      - filmId
+      - id
+      - mediaType
+      - name
+      - self
+      type: object
+    OnlineUser:
+      example:
+        filmTitle: filmTitle
+        filmId: 6
+        userName: userName
+        userId: 0
+      properties:
+        userId:
+          type: integer
+        userName:
+          type: string
+        filmId:
+          nullable: true
+          type: integer
+        filmTitle:
+          nullable: true
+          type: string
+      required:
+      - userId
+      - userName
+      type: object
+    MqttFilmMessage:
       properties:
         status:
-          example: ok
+          enum:
+          - active
+          - inactive
+          - deleted
+          type: string
+        userId:
+          type: string
+        userName:
           type: string
       required:
       - status
       type: object
+    filmsFilmIdImagesPOST_request:
+      properties:
+        image:
+          format: binary
+          type: string
+      required:
+      - image
+      type: object
+  securitySchemes:
+    cookieAuth:
+      in: cookie
+      name: connect-sid
+      type: apiKey

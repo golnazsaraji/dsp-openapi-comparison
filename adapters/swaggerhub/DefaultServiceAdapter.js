@@ -1,31 +1,18 @@
-const FilmService = require('../../shared-services/src/services/FilmService');
+const FilmManagerService = require('../../shared-services/src/services/FilmManagerService');
 
-const filmsGET = async () => {
-    return FilmService.getFilms();
-};
+module.exports = new Proxy({}, {
+    get(target, operationId) {
+        if (operationId in target) return target[operationId];
 
-const filmsIdGET = async (id) => {
-    return FilmService.getFilmById(id);
-};
+        return async (...args) => {
+            const operation = FilmManagerService[operationId];
+            if (typeof operation !== 'function') {
+                const error = new Error(`No shared service implementation for ${String(operationId)}.`);
+                error.status = 501;
+                throw error;
+            }
 
-const filmsPOST = async (newFilm) => {
-    return FilmService.createFilm(newFilm);
-};
-
-const filmsIdDELETE = async (id) => {
-    return FilmService.deleteFilm(id);
-};
-
-const statusGET = async () => {
-    return {
-        status: 'ok',
-    };
-};
-
-module.exports = {
-    filmsGET,
-    filmsIdGET,
-    filmsPOST,
-    filmsIdDELETE,
-    statusGET,
-};
+            return operation.apply(FilmManagerService, args);
+        };
+    },
+});
