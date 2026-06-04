@@ -14,9 +14,11 @@ openapi/openapi.yaml
 From the project root:
 
 ```bash
-cd generated-openapi-generator-custom
 npm start
 ```
+
+This regenerates `generated-openapi-generator-custom`, installs its dependencies, and
+leaves the generated server running.
 
 Base URL:
 
@@ -49,9 +51,7 @@ PORT=3101 npm start
 Then run the smoke test with:
 
 ```bash
-BASE_URL=http://localhost:3101 npm run smoke:custom
-```
-  npm start
+BASE_URL=http://localhost:3101 npm test
 ```
 
 ## Public Services
@@ -136,7 +136,7 @@ The same check is also available as a script from the project root. It expects t
 generated custom server to already be running:
 
 ```bash
-npm run smoke:custom
+npm test
 ```
 
 The script tests representative calls across the generated API layer, adapter layer, and
@@ -157,24 +157,22 @@ shared service layer:
 | `DELETE` | `/api/films/{filmId}` | Verifies film deletion |
 | `PUT` | `/api/films/2/active` as Karen | Verifies conflict detection with `409` |
 
-After regeneration, use this workflow:
+After regeneration/startup, use this workflow:
 
 ```bash
-npm run regenerate
-npm run install:custom
-npm run start:custom
+npm start
 ```
 
 Then, in a second terminal:
 
 ```bash
-npm run smoke:custom
+npm test
 ```
 
 If the generated custom server is running on a different port:
 
 ```bash
-BASE_URL=http://localhost:3101 npm run smoke:custom
+BASE_URL=http://localhost:3101 npm test
 ```
 
 ## Postman Collection
@@ -217,12 +215,12 @@ runImageUpload = true
 Then select a local PNG, JPG, or GIF file in `Images / Upload image` before running the
 image requests.
 
-## One-Command Regeneration Verification
+## One-Command Regeneration And Startup
 
-For a complete automated check from the project root:
+For the normal project workflow from the root:
 
 ```bash
-npm run verify:custom
+npm start
 ```
 
 This command:
@@ -230,13 +228,12 @@ This command:
 - regenerates `generated-openapi-generator-custom`
 - installs dependencies for the generated custom server
 - starts the generated custom server
-- runs the automated smoke test
-- stops the generated custom server
+- leaves the generated custom server running for Postman, Swagger UI, curl, or the smoke test
 
-By default it uses port `3000`. To run the verification on another port:
+By default it uses port `3000`. To run the server on another port:
 
 ```bash
-PORT=3101 BASE_URL=http://localhost:3101 npm run verify:custom
+PORT=3101 BASE_URL=http://localhost:3101 npm start
 ```
 
 ## Why This Simplifies Testing
@@ -246,15 +243,13 @@ checked through Swagger UI or individual curl commands. That made it easy to for
 step, use the wrong HTTP method, miss the login cookie, or only test GET endpoints while
 POST, PUT, and DELETE routes were broken.
 
-The new scripts make the process repeatable:
+The new scripts keep the normal workflow small:
 
 | Script | What it does |
 |---|---|
-| `npm run regenerate` | Recreates the custom generated server from `openapi/openapi.yaml` and the templates in `out/` |
-| `npm run install:custom` | Installs dependencies inside `generated-openapi-generator-custom` |
-| `npm run start:custom` | Starts the generated custom server |
-| `npm run smoke:custom` | Runs API checks against an already running generated server |
-| `npm run verify:custom` | Runs regeneration, install, server startup, smoke checks, and shutdown |
+| `npm start` | Regenerates, installs, and starts the generated custom server |
+| `npm test` | Runs API checks against an already running generated server |
+| `npm run smoke` | Same smoke test command used by `npm test` |
 
 The smoke test verifies the important integration path:
 

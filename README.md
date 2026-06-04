@@ -292,17 +292,38 @@ This removes the need for post-generation patch scripts.
 
 ## Runtime Verification
 
-The customized generated server was successfully executed.
+The customized generated server is executed from the project root with:
+
+```bash
+npm start
+```
+
+This command regenerates `generated-openapi-generator-custom`, installs its dependencies,
+and leaves the server running.
 
 The following endpoints were verified:
 
 ```text
-GET /films
-GET /films/1
-GET /status
+GET /health
+GET /api/films/public
+POST /api/sessions
+GET /api/sessions/current
+GET /api/films/to-review
+PUT /api/films/2/active
+POST /api/films
+PUT /api/films/{filmId}
+DELETE /api/films/{filmId}
+PUT /api/films/2/active as Karen -> 409 conflict
 ```
 
-The responses were successfully produced by the handwritten implementation stored in shared-services/.
+The smoke test is separate and should be run in another terminal after the server is up:
+
+```bash
+npm test
+```
+
+The responses are produced by the handwritten implementation stored in
+`shared-services/` through the generated service and adapter layers.
 
 ## Current Conclusions
 
