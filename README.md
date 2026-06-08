@@ -7,7 +7,7 @@ This repository is one final project for the DSP laboratory work. It compares ge
 | Path | Meaning |
 |---|---|
 | `openapi/` | OpenAPI specifications used by the project. |
-| `shared-services/` | Shared handwritten Film Manager logic plus Lab01 and Lab02 artifacts. |
+| `shared-services/` | Shared handwritten Film Manager logic plus Lab01-Lab05 artifacts. |
 | `adapters/` | Adapter layer connecting generated services to `shared-services/`. |
 | `out/` | Customized OpenAPI Generator templates. |
 | `generated-openapi-generator/` | Earlier OpenAPI Generator output kept for comparison. |
