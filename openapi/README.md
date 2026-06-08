@@ -1,19 +1,20 @@
-# OpenAPI Specification
+# OpenAPI Specifications
 
-This directory contains the canonical OpenAPI contract used by the project.
+This directory contains the OpenAPI contracts that are part of the final project.
 
 ## Contents
 
-- `openapi.yaml`: source OpenAPI 3.0 specification for the DSP Film Manager API.
+| File | Meaning |
+|---|---|
+| `initial-example.yaml` | Small Film API example used as the initial generator-comparison specification. |
+| `openapi.yaml` | Canonical Film Manager API used by the final project. |
 
-The contract now covers the Film Manager service described across the DSP labs:
-sessions, public films, owned films, reviews, image metadata, active film selection,
-and realtime status surfaces. Stable `operationId` values are included so generated
-services can delegate to the adapter layer predictably.
+The canonical Film Manager contract covers sessions, public films, owned films, reviews, Lab02 image management, Lab04 active film selection, Lab05 MQTT film-selection messages, and realtime status surfaces. It includes paginated film/review list responses, non-paginated Lab02 image metadata lists, HATEOAS `self` links, explicit error responses, and stable `operationId` values so generated services can delegate to the adapter layer predictably.
 
-This file is the input used to generate both server stubs:
+`openapi.yaml` is the input used by the final regeneration workflow:
 
-- `generated-openapi-generator/`
-- `generated-swaggerhub/`
+```bash
+npm start
+```
 
-When the API contract changes, this file should be updated first. The generated server projects can then be regenerated from this specification.
+When the final API contract changes, update `openapi.yaml` first and then regenerate the custom server.

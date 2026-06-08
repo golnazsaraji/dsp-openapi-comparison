@@ -13,7 +13,6 @@ film-manager-api.postman_collection.json
 1. Start the generated custom server:
 
 ```bash
-cd generated-openapi-generator-custom
 npm start
 ```
 
@@ -54,7 +53,7 @@ The collection stores `createdFilmId` automatically after creating a film. Clean
 last because the reviews and conflict scenario need that temporary data to still exist.
 
 Image upload is skipped by default in collection runs because Postman needs a local file
-selected manually. To test it, set this collection variable:
+selected manually. Run `Films / Create public film` first, then set this collection variable:
 
 ```text
 runImageUpload = true

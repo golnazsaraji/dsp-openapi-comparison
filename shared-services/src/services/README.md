@@ -15,10 +15,12 @@ generated servers call it indirectly through their corresponding adapter.
 | Lab area | Implemented behavior |
 |---|---|
 | Session and status API | Health/status checks, login, current-user lookup, and logout. |
-| Public film catalogue | Public film list/detail endpoints and public review reads. |
-| Authenticated film management | Owned-film CRUD plus the list of films assigned to the current reviewer. |
-| Review and image workflows | Reviewer invitation/removal, current-review completion, and image metadata CRUD. |
-| Realtime active-film behavior | Online-user snapshot, active-film selection, clearing the current active film, and `409` conflict detection when another reviewer already has the film active. |
+| Public film catalogue | Paginated public film list/detail endpoints and paginated public review reads. |
+| Authenticated film management | Owned-film CRUD plus paginated lists for owned films and films assigned to the current reviewer. |
+| Review and image workflows | Reviewer invitation/removal, automatic invitation creation, current-review completion, and Lab02 image metadata reads. |
+| Realtime active-film behavior | Lab04 online-user snapshot, active-film selection, clearing the current active film, WebSocket status-message helpers, Lab05 MQTT film-selection messages, and `409` conflict detection when another reviewer already has the film active. |
 
 The service keeps data in memory because the project goal is generator comparison and
 regeneration safety, not database persistence.
+
+Image list operations intentionally return a JSON array rather than a paginated object because Lab02 states that pagination is not necessary for images.

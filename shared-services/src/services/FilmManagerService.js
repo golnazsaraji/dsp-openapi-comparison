@@ -25,6 +25,8 @@ class FilmManagerService {
         this.nextFilmId = 5;
         this.nextImageId = 1;
         this.currentUserId = 1;
+        this.allowedImageMediaTypes = new Set(['image/png', 'image/jpg', 'image/jpeg', 'image/gif']);
+        this.loggedInUserIds = new Set();
     }
 
     error(message, status = 400) {
@@ -45,13 +47,39 @@ class FilmManagerService {
     filmDto(film, publicRoute = false) {
         return film && {
             ...film,
+            owner: film.ownerId,
+            private: !film.public,
             self: publicRoute ? `/api/films/public/${film.id}` : `/api/films/${film.id}`,
+        };
+    }
+
+    page(items, path, page = 1, limit = 10) {
+        const pageNumber = Math.max(Number(page) || 1, 1);
+        const pageLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+        const totalItems = items.length;
+        const totalPages = Math.ceil(totalItems / pageLimit);
+        const start = (pageNumber - 1) * pageLimit;
+        const separator = path.includes('?') ? '&' : '?';
+        const pagePath = (targetPage) => `${path}${separator}page=${targetPage}&limit=${pageLimit}`;
+
+        return {
+            items: items.slice(start, start + pageLimit),
+            pagination: {
+                page: pageNumber,
+                limit: pageLimit,
+                totalItems,
+                totalPages,
+            },
+            self: pagePath(pageNumber),
+            next: pageNumber < totalPages ? pagePath(pageNumber + 1) : null,
+            prev: pageNumber > 1 && totalPages > 0 ? pagePath(pageNumber - 1) : null,
         };
     }
 
     reviewDto(review) {
         return review && {
             ...review,
+            review: review.description,
             reviewer: this.user(review.reviewerId),
             self: `/api/films/public/${review.filmId}/reviews/${review.reviewerId}`,
         };
@@ -79,6 +107,7 @@ class FilmManagerService {
         ));
         if (!user) throw this.error('Invalid email or password.', 401);
         this.currentUserId = user.id;
+        this.loggedInUserIds.add(user.id);
         return this.user(user.id);
     }
 
@@ -87,11 +116,12 @@ class FilmManagerService {
     }
 
     sessionsCurrentDELETE() {
+        this.loggedInUserIds.delete(this.currentUserId);
         return null;
     }
 
     usersOnlineGET() {
-        return this.users.map((user) => {
+        return this.users.filter((user) => this.loggedInUserIds.has(user.id)).map((user) => {
             const activeReview = this.reviews.find((review) => review.reviewerId === user.id && review.active);
             const activeFilm = activeReview && this.film(activeReview.filmId);
             return {
@@ -103,8 +133,58 @@ class FilmManagerService {
         });
     }
 
-    filmsPublicGET() {
-        return this.films.filter((film) => film.public).map((film) => this.filmDto(film, true));
+    webSocketStatusMessage(userId, typeMessage = 'update') {
+        const user = this.user(userId);
+        if (!user) return null;
+        if (typeMessage === 'logout') {
+            return {
+                typeMessage,
+                userId: user.id,
+            };
+        }
+
+        const activeReview = this.reviews.find((review) => review.reviewerId === user.id && review.active);
+        const activeFilm = activeReview && this.film(activeReview.filmId);
+        return {
+            typeMessage,
+            userId: user.id,
+            userName: user.name,
+            ...(activeFilm ? { filmId: activeFilm.id, filmTitle: activeFilm.title } : {}),
+        };
+    }
+
+    webSocketSnapshot() {
+        return [...this.loggedInUserIds]
+            .map((userId) => this.webSocketStatusMessage(userId, 'login'))
+            .filter(Boolean);
+    }
+
+    mqttFilmMessage(filmId, deleted = false) {
+        if (deleted) return { status: 'deleted' };
+
+        const activeReview = this.reviews.find((review) => review.filmId === Number(filmId) && review.active);
+        if (!activeReview) return { status: 'inactive' };
+
+        const user = this.user(activeReview.reviewerId);
+        return {
+            status: 'active',
+            userId: user.id,
+            userName: user.name,
+        };
+    }
+
+    mqttInitialFilmMessages() {
+        return this.films
+            .filter((film) => film.public)
+            .map((film) => ({
+                filmId: film.id,
+                message: this.mqttFilmMessage(film.id),
+            }));
+    }
+
+    filmsPublicGET(page, limit) {
+        const films = this.films.filter((film) => film.public).map((film) => this.filmDto(film, true));
+        return this.page(films, '/api/films/public', page, limit);
     }
 
     filmsPublicFilmIdGET(filmId) {
@@ -113,9 +193,10 @@ class FilmManagerService {
         return this.filmDto(film, true);
     }
 
-    filmsPublicFilmIdReviewsGET(filmId) {
+    filmsPublicFilmIdReviewsGET(filmId, page, limit) {
         this.filmsPublicFilmIdGET(filmId);
-        return this.reviews.filter((review) => review.filmId === Number(filmId)).map((review) => this.reviewDto(review));
+        const reviews = this.reviews.filter((review) => review.filmId === Number(filmId)).map((review) => this.reviewDto(review));
+        return this.page(reviews, `/api/films/public/${filmId}/reviews`, page, limit);
     }
 
     filmsPublicFilmIdReviewsReviewerIdGET(filmId, reviewerId) {
@@ -125,8 +206,9 @@ class FilmManagerService {
         return this.reviewDto(review);
     }
 
-    filmsGET() {
-        return this.films.filter((film) => film.ownerId === this.currentUserId).map((film) => this.filmDto(film));
+    filmsGET(page, limit) {
+        const films = this.films.filter((film) => film.ownerId === this.currentUserId).map((film) => this.filmDto(film));
+        return this.page(films, '/api/films', page, limit);
     }
 
     getFilms() {
@@ -135,29 +217,68 @@ class FilmManagerService {
 
     filmsPOST(filmInput = {}) {
         if (!filmInput.title) throw this.error('title is required');
+        const isPublic = filmInput.private !== undefined ? !filmInput.private : Boolean(filmInput.public);
         const film = {
             id: this.nextFilmId,
             title: filmInput.title,
             ownerId: this.currentUserId,
-            public: Boolean(filmInput.public),
+            public: isPublic,
             watchDate: filmInput.watchDate || null,
             rating: filmInput.rating ?? null,
             favorite: Boolean(filmInput.favorite),
         };
         this.nextFilmId += 1;
         this.films.push(film);
-        return this.filmDto(film);
+        const dto = this.filmDto(film);
+        if (film.public) dto.mqtt = this.mqttFilmMessage(film.id);
+        return dto;
     }
 
     createFilm(filmInput) {
         return this.filmsPOST(filmInput);
     }
 
-    filmsToReviewGET() {
+    filmsToReviewGET(page, limit) {
         const filmIds = new Set(
             this.reviews.filter((review) => review.reviewerId === this.currentUserId).map((review) => review.filmId),
         );
-        return this.films.filter((film) => filmIds.has(film.id)).map((film) => this.filmDto(film));
+        const films = this.films.filter((film) => filmIds.has(film.id)).map((film) => this.filmDto(film));
+        return this.page(films, '/api/films/to-review', page, limit);
+    }
+
+    reviewsAutoInvitationsPOST() {
+        const created = [];
+        const invitationCounts = new Map(this.users.map((user) => [
+            user.id,
+            this.reviews.filter((review) => review.reviewerId === user.id).length,
+        ]));
+
+        this.films
+            .filter((film) => film.public)
+            .filter((film) => !this.reviews.some((review) => review.filmId === film.id))
+            .forEach((film) => {
+                const reviewer = [...this.users].sort((left, right) => (
+                    invitationCounts.get(left.id) - invitationCounts.get(right.id)
+                ))[0];
+                const review = {
+                    filmId: film.id,
+                    reviewerId: reviewer.id,
+                    completed: false,
+                    reviewDate: null,
+                    rating: null,
+                    description: null,
+                    active: false,
+                };
+                this.reviews.push(review);
+                invitationCounts.set(reviewer.id, invitationCounts.get(reviewer.id) + 1);
+                created.push(this.reviewDto(review));
+            });
+
+        if (created.length === 0) throw this.error('No public films without invitations.', 409);
+        return {
+            items: created,
+            self: '/api/reviews/auto-invitations',
+        };
     }
 
     filmsFilmIdGET(filmId) {
@@ -178,7 +299,8 @@ class FilmManagerService {
         const film = this.film(filmId);
         if (!film) throw this.error('Film not found.', 404);
         if (film.ownerId !== this.currentUserId) throw this.error('Only the owner can update this film.', 403);
-        if (filmInput.public !== undefined && Boolean(filmInput.public) !== film.public) {
+        const requestedPublic = filmInput.private !== undefined ? !filmInput.private : filmInput.public;
+        if (requestedPublic !== undefined && Boolean(requestedPublic) !== film.public) {
             throw this.error('Film visibility cannot be changed.', 409);
         }
         Object.assign(film, {
@@ -194,9 +316,11 @@ class FilmManagerService {
         const film = this.film(filmId);
         if (!film) throw this.error('Film not found.', 404);
         if (film.ownerId !== this.currentUserId) throw this.error('Only the owner can delete this film.', 403);
+        const deletedWasPublic = film.public;
         this.films = this.films.filter((item) => item.id !== film.id);
         this.reviews = this.reviews.filter((review) => review.filmId !== film.id);
         this.images = this.images.filter((image) => image.filmId !== film.id);
+        if (deletedWasPublic) return { mqtt: this.mqttFilmMessage(film.id, true) };
         return true;
     }
 
@@ -236,7 +360,7 @@ class FilmManagerService {
         review.completed = true;
         review.reviewDate = body.reviewDate || new Date().toISOString().slice(0, 10);
         review.rating = body.rating ?? review.rating;
-        review.description = body.description ?? review.description;
+        review.description = body.review ?? body.description ?? review.description;
         return this.reviewDto(review);
     }
 
@@ -248,19 +372,47 @@ class FilmManagerService {
             review.filmId === film.id && review.active && review.reviewerId !== this.currentUserId
         ));
         if (conflicting) throw this.error('The film is already active for another user.', 409);
+        const changedFilmIds = new Set();
         this.reviews.forEach((review) => {
-            if (review.reviewerId === this.currentUserId) review.active = false;
+            if (review.reviewerId === this.currentUserId && review.active) {
+                review.active = false;
+                changedFilmIds.add(review.filmId);
+            }
         });
         const review = this.reviews.find((item) => item.filmId === film.id && item.reviewerId === this.currentUserId);
         review.active = true;
-        return this.reviewDto(review);
+        changedFilmIds.add(film.id);
+        const dto = this.reviewDto(review);
+        dto.mqtt = [...changedFilmIds].map((changedFilmId) => ({
+            filmId: changedFilmId,
+            message: this.mqttFilmMessage(changedFilmId),
+        }));
+        return dto;
     }
 
     usersCurrentActiveFilmDELETE() {
+        const changedFilmIds = new Set();
         this.reviews.forEach((review) => {
-            if (review.reviewerId === this.currentUserId) review.active = false;
+            if (review.reviewerId === this.currentUserId && review.active) {
+                review.active = false;
+                changedFilmIds.add(review.filmId);
+            }
         });
-        return true;
+        return {
+            mqtt: [...changedFilmIds].map((filmId) => ({
+                filmId,
+                message: this.mqttFilmMessage(filmId),
+            })),
+        };
+    }
+
+    imageMediaType(fileName = '') {
+        const lowerName = String(fileName).toLowerCase();
+        if (lowerName.endsWith('.png')) return 'image/png';
+        if (lowerName.endsWith('.jpg')) return 'image/jpg';
+        if (lowerName.endsWith('.jpeg')) return 'image/jpeg';
+        if (lowerName.endsWith('.gif')) return 'image/gif';
+        return null;
     }
 
     filmsFilmIdImagesGET(filmId) {
@@ -273,11 +425,16 @@ class FilmManagerService {
         if (!film?.public || film.ownerId !== this.currentUserId) {
             throw this.error('Only the owner can add images to a public film.', 403);
         }
+        const uploadedName = typeof imageInput === 'string' ? imageInput : imageInput.name;
+        const mediaType = imageInput.mediaType || this.imageMediaType(uploadedName) || 'image/png';
+        if (!this.allowedImageMediaTypes.has(mediaType)) {
+            throw this.error('Unsupported image media type.', 415);
+        }
         const image = {
             id: this.nextImageId,
             filmId: Number(filmId),
-            name: imageInput.name || `image-${this.nextImageId}`,
-            mediaType: imageInput.mediaType || 'image/png',
+            name: uploadedName || `image-${this.nextImageId}`,
+            mediaType,
             self: `/api/films/${filmId}/images/${this.nextImageId}`,
         };
         this.nextImageId += 1;
@@ -285,9 +442,12 @@ class FilmManagerService {
         return image;
     }
 
-    filmsFilmIdImagesImageIdGET(filmId, imageId) {
+    filmsFilmIdImagesImageIdGET(filmId, imageId, accept = 'application/json') {
         const image = this.images.find((item) => item.filmId === Number(filmId) && item.id === Number(imageId));
         if (!image) throw this.error('Image not found.', 404);
+        const acceptedTypes = String(accept || 'application/json').split(',').map((item) => item.split(';')[0].trim());
+        const requestedType = acceptedTypes.find((item) => item === '*/*' || item === 'application/json' || this.allowedImageMediaTypes.has(item));
+        if (!requestedType) throw this.error('Unsupported requested image media type.', 406);
         return image;
     }
 

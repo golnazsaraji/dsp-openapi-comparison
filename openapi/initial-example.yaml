@@ -1,0 +1,109 @@
+openapi: 3.0.3
+info:
+  title: DSP Initial Film Example API
+  version: 1.0.0
+  description: Initial small OpenAPI example kept as the starting point of the generator comparison.
+servers:
+  - url: http://localhost:3000
+paths:
+  /status:
+    get:
+      summary: API status
+      operationId: statusGET
+      responses:
+        '200':
+          description: API status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+  /films:
+    get:
+      summary: Get all films
+      operationId: filmsGET
+      responses:
+        '200':
+          description: List of films
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Film'
+    post:
+      summary: Create a new film
+      operationId: filmsPOST
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewFilm'
+      responses:
+        '201':
+          description: Film created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Film'
+        '400':
+          description: Invalid request body
+  /films/{id}:
+    get:
+      summary: Get film by id
+      operationId: filmsIdGET
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+      responses:
+        '200':
+          description: Film found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Film'
+        '404':
+          description: Film not found
+    delete:
+      summary: Delete film by id
+      operationId: filmsIdDELETE
+      parameters:
+        - $ref: '#/components/parameters/FilmId'
+      responses:
+        '204':
+          description: Film deleted
+        '404':
+          description: Film not found
+components:
+  parameters:
+    FilmId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  schemas:
+    Film:
+      type: object
+      required: [id, title]
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Interstellar
+    NewFilm:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          example: Inception
+    Status:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: ok

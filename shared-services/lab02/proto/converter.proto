@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package converter;
+
+service Converter {
+  rpc Convert(stream ImageChunk) returns (stream ImageChunk);
+}
+
+message ConversionRequest {
+  string source_media_type = 1;
+  string target_media_type = 2;
+}
+
+message ImageChunk {
+  oneof payload {
+    ConversionRequest request = 1;
+    bytes content = 2;
+    ConversionError error = 3;
+  }
+}
+
+message ConversionError {
+  string message = 1;
+}

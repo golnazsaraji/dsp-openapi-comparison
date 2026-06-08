@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "2bdf8e56-4f85-4dbf-ae9c-dsp-film-manager",
     "name": "DSP Film Manager API",
-    "description": "Postman collection for testing the generated Film Manager API after regeneration. Start the generated custom server first with `npm run start:custom` from the project root.",
+    "description": "Postman collection for testing the generated Film Manager API after regeneration. Start the generated custom server first with `npm start` from the project root.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -155,7 +155,9 @@
                 "exec": [
                   "pm.test('public films returned', function () {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.pagination.page).to.eql(1);",
                   "});"
                 ]
               }
@@ -222,7 +224,23 @@
             "method": "PUT",
             "header": [],
             "url": "{{baseUrl}}/api/films/{{reviewFilmId}}/active"
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('active film selected with MQTT status', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.active).to.eql(true);",
+                  "  pm.expect(body.mqtt).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Create public film",
@@ -236,7 +254,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Postman Test Film\",\n  \"public\": true,\n  \"watchDate\": \"2026-06-04\",\n  \"rating\": 4,\n  \"favorite\": false\n}"
+              "raw": "{\n  \"title\": \"Postman Test Film\",\n  \"private\": false,\n  \"watchDate\": \"2026-06-04\",\n  \"rating\": 8,\n  \"favorite\": false\n}"
             },
             "url": "{{baseUrl}}/api/films"
           },
@@ -269,7 +287,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Postman Test Film Updated\",\n  \"public\": true,\n  \"watchDate\": \"2026-06-04\",\n  \"rating\": 5,\n  \"favorite\": true\n}"
+              "raw": "{\n  \"title\": \"Postman Test Film Updated\",\n  \"private\": false,\n  \"watchDate\": \"2026-06-04\",\n  \"rating\": 9,\n  \"favorite\": true\n}"
             },
             "url": "{{baseUrl}}/api/films/{{createdFilmId}}"
           }
@@ -317,7 +335,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reviewDate\": \"2026-06-04\",\n  \"rating\": 5,\n  \"description\": \"Reviewed from Postman.\"\n}"
+              "raw": "{\n  \"reviewDate\": \"2026-06-04\",\n  \"rating\": 9,\n  \"review\": \"Reviewed from Postman.\"\n}"
             },
             "url": "{{baseUrl}}/api/films/{{reviewFilmId}}/reviews/current"
           }
@@ -326,14 +344,14 @@
     },
     {
       "name": "Images",
-      "description": "For upload, choose a local PNG, JPG, or GIF file in the Postman file picker.",
+      "description": "Create a public film first. For upload, choose a local PNG, JPG, or GIF file in the Postman file picker.",
       "item": [
         {
           "name": "List images",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/films/{{publicFilmId}}/images"
+            "url": "{{baseUrl}}/api/films/{{createdFilmId}}/images"
           }
         },
         {
@@ -351,7 +369,7 @@
                 }
               ]
             },
-            "url": "{{baseUrl}}/api/films/{{publicFilmId}}/images"
+            "url": "{{baseUrl}}/api/films/{{createdFilmId}}/images"
           },
           "event": [
             {
@@ -389,7 +407,33 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{baseUrl}}/api/films/{{publicFilmId}}/images/{{createdImageId}}"
+            "url": "{{baseUrl}}/api/films/{{createdFilmId}}/images/{{createdImageId}}"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('runImageUpload') !== 'true' || !pm.collectionVariables.get('createdImageId')) {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get image file",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "image/png"
+              }
+            ],
+            "url": "{{baseUrl}}/api/films/{{createdFilmId}}/images/{{createdImageId}}"
           },
           "event": [
             {
@@ -410,7 +454,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/api/films/{{publicFilmId}}/images/{{createdImageId}}"
+            "url": "{{baseUrl}}/api/films/{{createdFilmId}}/images/{{createdImageId}}"
           },
           "event": [
             {
@@ -437,7 +481,26 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/api/users/online"
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('online snapshot returned', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.be.an('array');",
+                  "  if (body.length > 0) {",
+                  "    pm.expect(body[0]).to.have.property('userId');",
+                  "    pm.expect(body[0]).to.have.property('userName');",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

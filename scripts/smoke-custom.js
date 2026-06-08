@@ -81,8 +81,9 @@ async function main() {
   await step('list public films', async () => {
     const response = await request('GET', '/api/films/public');
     assertStatus(response, 200, 'GET /api/films/public');
-    assert(Array.isArray(response.data), 'public films response should be an array');
-    assert(response.data.length > 0, 'public films response should not be empty');
+    assert(Array.isArray(response.data.items), 'public films response should contain an items array');
+    assert(response.data.items.length > 0, 'public films response should not be empty');
+    assert(response.data.pagination.page === 1, 'public films response should include pagination');
   });
 
   await step('login as Frank', async () => {
@@ -101,24 +102,34 @@ async function main() {
     assert(response.data.email === 'frank@example.com', 'current session should be Frank');
   });
 
+  await step('read online users snapshot', async () => {
+    const response = await request('GET', '/api/users/online');
+    assertStatus(response, 200, 'GET /api/users/online');
+    assert(Array.isArray(response.data), 'online users snapshot should be an array');
+    assert(response.data.some((user) => user.userId === 2), 'online users should include Frank after login');
+  });
+
   await step('list films to review', async () => {
     const response = await request('GET', '/api/films/to-review');
     assertStatus(response, 200, 'GET /api/films/to-review');
-    assert(Array.isArray(response.data), 'films to review should be an array');
+    assert(Array.isArray(response.data.items), 'films to review should contain an items array');
+    assert(response.data.pagination.page === 1, 'films to review should include pagination');
   });
 
   await step('select active film', async () => {
     const response = await request('PUT', '/api/films/2/active');
     assertStatus(response, 200, 'PUT /api/films/2/active');
     assert(response.data.active === true, 'selected review should be active');
+    assert(Array.isArray(response.data.mqtt), 'selected review should include MQTT status messages');
+    assert(response.data.mqtt.some((item) => item.filmId === 2 && item.message.status === 'active'), 'MQTT messages should mark film 2 active');
   });
 
   const createdFilm = await step('create public film', async () => {
     const response = await request('POST', '/api/films', {
       title: 'Smoke Test Film',
-      public: true,
+      private: false,
       watchDate: '2026-06-03',
-      rating: 4,
+      rating: 8,
       favorite: false,
     });
     assertStatus(response, [200, 201], 'POST /api/films');
@@ -129,9 +140,9 @@ async function main() {
   await step('update created film', async () => {
     const response = await request('PUT', `/api/films/${createdFilm.id}`, {
       title: 'Smoke Test Film Updated',
-      public: true,
+      private: false,
       watchDate: '2026-06-03',
-      rating: 5,
+      rating: 9,
       favorite: true,
     });
     assertStatus(response, 200, `PUT /api/films/${createdFilm.id}`);

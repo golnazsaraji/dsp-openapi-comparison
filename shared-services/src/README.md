@@ -25,9 +25,12 @@ comparison project:
 | Session and status API | `healthGET`, `statusGET`, `sessionsPOST`, `sessionsCurrentGET`, `sessionsCurrentDELETE` |
 | Public film catalogue | `filmsPublicGET`, `filmsPublicFilmIdGET`, `filmsPublicFilmIdReviewsGET`, `filmsPublicFilmIdReviewsReviewerIdGET` |
 | Authenticated film management | `filmsGET`, `filmsPOST`, `filmsToReviewGET`, `filmsFilmIdGET`, `filmsFilmIdPUT`, `filmsFilmIdDELETE` |
-| Review and image workflows | `filmsFilmIdReviewsPOST`, `filmsFilmIdReviewsReviewerIdDELETE`, `filmsFilmIdReviewsCurrentPUT`, `filmsFilmIdImagesGET`, `filmsFilmIdImagesPOST`, `filmsFilmIdImagesImageIdGET`, `filmsFilmIdImagesImageIdDELETE` |
-| Realtime active-film behavior | `usersOnlineGET`, `filmsFilmIdActivePUT`, `usersCurrentActiveFilmDELETE` |
+| Review and image workflows | `reviewsAutoInvitationsPOST`, `filmsFilmIdReviewsPOST`, `filmsFilmIdReviewsReviewerIdDELETE`, `filmsFilmIdReviewsCurrentPUT`, `filmsFilmIdImagesGET`, `filmsFilmIdImagesPOST`, `filmsFilmIdImagesImageIdGET`, `filmsFilmIdImagesImageIdDELETE` |
+| Realtime active-film behavior | `usersOnlineGET`, `filmsFilmIdActivePUT`, `usersCurrentActiveFilmDELETE`, `webSocketSnapshot`, `webSocketStatusMessage`, `mqttInitialFilmMessages`, `mqttFilmMessage` |
 
 The operation names match the OpenAPI `operationId` values. This is deliberate: generated
 service files can delegate through the adapter layer without knowing the handwritten
 implementation details.
+
+Lab02 image list operations return JSON arrays rather than paginated response objects,
+matching the image-management specification.

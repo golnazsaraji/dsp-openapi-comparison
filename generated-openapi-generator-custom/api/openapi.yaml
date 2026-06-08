@@ -38,6 +38,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
           description: Authenticated user
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "401":
           content:
             application/json:
@@ -54,6 +60,12 @@ paths:
       responses:
         "204":
           description: Logged out
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
       summary: Logout
       tags:
       - sessions
@@ -89,6 +101,14 @@ paths:
                   $ref: "#/components/schemas/OnlineUser"
                 type: array
           description: Online users
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
       summary: Get current WebSocket online snapshot
       tags:
       - realtime
@@ -96,15 +116,41 @@ paths:
   /api/films/public:
     get:
       operationId: filmsPublicGET
+      parameters:
+      - description: One-based page number.
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: Maximum number of resources returned in one page.
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 10
+          maximum: 100
+          minimum: 1
+          type: integer
+        style: form
       responses:
         "200":
           content:
             application/json:
               schema:
-                items:
-                  $ref: "#/components/schemas/Film"
-                type: array
-          description: Public films
+                $ref: "#/components/schemas/FilmPage"
+          description: Paginated public films
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
       summary: List public films
       tags:
       - public-films
@@ -118,6 +164,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       responses:
@@ -146,17 +193,43 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
+      - description: One-based page number.
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: Maximum number of resources returned in one page.
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 10
+          maximum: 100
+          minimum: 1
+          type: integer
+        style: form
       responses:
         "200":
           content:
             application/json:
               schema:
-                items:
-                  $ref: "#/components/schemas/Review"
-                type: array
-          description: Reviews
+                $ref: "#/components/schemas/ReviewPage"
+          description: Paginated reviews
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "404":
           content:
             application/json:
@@ -177,6 +250,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       - explode: false
@@ -184,6 +258,7 @@ paths:
         name: reviewerId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       responses:
@@ -193,6 +268,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Review"
           description: Review
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "404":
           content:
             application/json:
@@ -207,15 +288,41 @@ paths:
   /api/films:
     get:
       operationId: filmsGET
+      parameters:
+      - description: One-based page number.
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: Maximum number of resources returned in one page.
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 10
+          maximum: 100
+          minimum: 1
+          type: integer
+        style: form
       responses:
         "200":
           content:
             application/json:
               schema:
-                items:
-                  $ref: "#/components/schemas/Film"
-                type: array
-          description: Owned films
+                $ref: "#/components/schemas/FilmPage"
+          description: Paginated owned films
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "401":
           content:
             application/json:
@@ -244,6 +351,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Film"
           description: Created film
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "401":
           content:
             application/json:
@@ -259,15 +372,47 @@ paths:
   /api/films/to-review:
     get:
       operationId: filmsToReviewGET
+      parameters:
+      - description: One-based page number.
+        explode: true
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      - description: Maximum number of resources returned in one page.
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 10
+          maximum: 100
+          minimum: 1
+          type: integer
+        style: form
       responses:
         "200":
           content:
             application/json:
               schema:
-                items:
-                  $ref: "#/components/schemas/Film"
-                type: array
-          description: Films to review
+                $ref: "#/components/schemas/FilmPage"
+          description: Paginated films to review
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
       security:
       - cookieAuth: []
       summary: List films assigned to the current reviewer
@@ -275,6 +420,34 @@ paths:
       - films
       - reviews
       x-eov-operation-handler: controllers/FilmsController
+  /api/reviews/auto-invitations:
+    post:
+      operationId: reviewsAutoInvitationsPOST
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewInvitationBatch"
+          description: Created review invitations
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: Automatically issue review invitations for public films without invitations
+      tags:
+      - reviews
+      x-eov-operation-handler: controllers/ReviewsController
   /api/films/{filmId}:
     delete:
       operationId: filmsFilmIdDELETE
@@ -284,12 +457,25 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       responses:
         "204":
           description: Deleted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
           content:
             application/json:
               schema:
@@ -309,6 +495,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       responses:
@@ -318,6 +505,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/Film"
           description: Film
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "404":
           content:
             application/json:
@@ -338,6 +537,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       requestBody:
@@ -354,7 +554,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/Film"
           description: Updated film
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
           content:
             application/json:
               schema:
@@ -381,6 +599,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       requestBody:
@@ -397,7 +616,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/Review"
           description: Review invitation
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "409":
           content:
             application/json:
               schema:
@@ -418,6 +661,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       - explode: false
@@ -425,11 +669,30 @@ paths:
         name: reviewerId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       responses:
         "204":
           description: Removed
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "409":
           content:
             application/json:
@@ -451,6 +714,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       requestBody:
@@ -467,6 +731,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/Review"
           description: Completed review
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
       security:
       - cookieAuth: []
       summary: Complete the current user's review
@@ -482,6 +770,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       responses:
@@ -491,7 +780,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/Review"
           description: Active review
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
           content:
             application/json:
               schema:
@@ -516,6 +817,12 @@ paths:
       responses:
         "204":
           description: Active film cleared
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
       security:
       - cookieAuth: []
       summary: Clear the current user's active film
@@ -532,6 +839,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       responses:
@@ -543,6 +851,24 @@ paths:
                   $ref: "#/components/schemas/Image"
                 type: array
           description: Image metadata
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
       security:
       - cookieAuth: []
       summary: List images for a public owned/review film
@@ -557,6 +883,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       requestBody:
@@ -572,6 +899,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/Image"
           description: Created image metadata
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "415":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
       security:
       - cookieAuth: []
       summary: Upload an image for a public owned film
@@ -587,6 +944,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       - explode: false
@@ -594,11 +952,30 @@ paths:
         name: imageId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       responses:
         "204":
           description: Deleted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
       security:
       - cookieAuth: []
       summary: Delete an image from a public owned film
@@ -613,6 +990,7 @@ paths:
         name: filmId
         required: true
         schema:
+          minimum: 1
           type: integer
         style: simple
       - explode: false
@@ -620,7 +998,22 @@ paths:
         name: imageId
         required: true
         schema:
+          minimum: 1
           type: integer
+        style: simple
+      - description: Requested representation for a single image.
+        explode: false
+        in: header
+        name: accept
+        required: false
+        schema:
+          enum:
+          - application/json
+          - image/png
+          - image/jpg
+          - image/jpeg
+          - image/gif
+          type: string
         style: simple
       responses:
         "200":
@@ -629,6 +1022,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/Image"
             image/png:
+              schema:
+                format: binary
+                type: string
+            image/jpg:
               schema:
                 format: binary
                 type: string
@@ -641,6 +1038,24 @@ paths:
                 format: binary
                 type: string
           description: Image metadata or image bytes
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "406":
           content:
             application/json:
@@ -661,6 +1076,7 @@ components:
       name: filmId
       required: true
       schema:
+        minimum: 1
         type: integer
       style: simple
     ReviewerId:
@@ -669,6 +1085,7 @@ components:
       name: reviewerId
       required: true
       schema:
+        minimum: 1
         type: integer
       style: simple
     ImageId:
@@ -677,7 +1094,46 @@ components:
       name: imageId
       required: true
       schema:
+        minimum: 1
         type: integer
+      style: simple
+    Page:
+      description: One-based page number.
+      explode: true
+      in: query
+      name: page
+      required: false
+      schema:
+        default: 1
+        minimum: 1
+        type: integer
+      style: form
+    Limit:
+      description: Maximum number of resources returned in one page.
+      explode: true
+      in: query
+      name: limit
+      required: false
+      schema:
+        default: 10
+        maximum: 100
+        minimum: 1
+        type: integer
+      style: form
+    AcceptImage:
+      description: Requested representation for a single image.
+      explode: false
+      in: header
+      name: accept
+      required: false
+      schema:
+        enum:
+        - application/json
+        - image/png
+        - image/jpg
+        - image/jpeg
+        - image/gif
+        type: string
       style: simple
   responses:
     Error:
@@ -696,6 +1152,141 @@ components:
       required:
       - error
       type: object
+    Pagination:
+      example:
+        totalItems: 0
+        limit: 1
+        totalPages: 0
+        page: 1
+      properties:
+        page:
+          minimum: 1
+          type: integer
+        limit:
+          minimum: 1
+          type: integer
+        totalItems:
+          minimum: 0
+          type: integer
+        totalPages:
+          minimum: 0
+          type: integer
+      required:
+      - limit
+      - page
+      - totalItems
+      - totalPages
+      type: object
+    FilmPage:
+      example:
+        next: next
+        pagination:
+          totalItems: 0
+          limit: 1
+          totalPages: 0
+          page: 1
+        prev: prev
+        self: self
+        items:
+        - owner: 6
+          private: true
+          watchDate: 2000-01-23
+          public: true
+          rating: 5
+          self: self
+          id: 0
+          title: title
+          ownerId: 1
+          favorite: true
+        - owner: 6
+          private: true
+          watchDate: 2000-01-23
+          public: true
+          rating: 5
+          self: self
+          id: 0
+          title: title
+          ownerId: 1
+          favorite: true
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/Film"
+          type: array
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        self:
+          type: string
+        next:
+          nullable: true
+          type: string
+        prev:
+          nullable: true
+          type: string
+      required:
+      - items
+      - pagination
+      - self
+      type: object
+    ReviewPage:
+      example:
+        next: next
+        pagination:
+          totalItems: 0
+          limit: 1
+          totalPages: 0
+          page: 1
+        prev: prev
+        self: self
+        items:
+        - reviewerId: 6
+          reviewDate: 2000-01-23
+          review: review
+          filmId: 0
+          rating: 1
+          description: description
+          active: true
+          self: self
+          completed: true
+          reviewer:
+            name: name
+            self: self
+            id: 0
+            email: email
+        - reviewerId: 6
+          reviewDate: 2000-01-23
+          review: review
+          filmId: 0
+          rating: 1
+          description: description
+          active: true
+          self: self
+          completed: true
+          reviewer:
+            name: name
+            self: self
+            id: 0
+            email: email
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/Review"
+          type: array
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        self:
+          type: string
+        next:
+          nullable: true
+          type: string
+        prev:
+          nullable: true
+          type: string
+      required:
+      - items
+      - pagination
+      - self
+      type: object
     LoginRequest:
       example:
         password: password
@@ -706,6 +1297,8 @@ components:
           type: string
         password:
           format: password
+          maxLength: 20
+          minLength: 6
           type: string
       required:
       - email
@@ -735,28 +1328,41 @@ components:
       type: object
     Film:
       example:
-        watchDate: watchDate
+        owner: 6
+        private: true
+        watchDate: 2000-01-23
         public: true
-        rating: 0
+        rating: 5
         self: self
         id: 0
         title: title
-        ownerId: 6
+        ownerId: 1
         favorite: true
       properties:
         id:
           type: integer
         title:
           type: string
-        ownerId:
+        owner:
+          description: Identifier of the user who created the film.
           type: integer
+        ownerId:
+          deprecated: true
+          description: Compatibility alias for owner.
+          type: integer
+        private:
+          description: True when only the owner can access the film.
+          type: boolean
         public:
+          deprecated: true
+          description: Compatibility alias equal to the inverse of private.
           type: boolean
         watchDate:
+          format: date
           nullable: true
           type: string
         rating:
-          maximum: 5
+          maximum: 10
           minimum: 0
           nullable: true
           type: integer
@@ -767,14 +1373,15 @@ components:
       required:
       - favorite
       - id
-      - ownerId
-      - public
+      - owner
+      - private
       - self
       - title
       type: object
     FilmInput:
       example:
-        watchDate: watchDate
+        private: true
+        watchDate: 2000-01-23
         public: true
         rating: 0
         title: title
@@ -782,26 +1389,32 @@ components:
       properties:
         title:
           type: string
+        private:
+          type: boolean
         public:
+          deprecated: true
+          description: Compatibility alias equal to the inverse of private.
           type: boolean
         watchDate:
+          format: date
           nullable: true
           type: string
         rating:
-          maximum: 5
+          maximum: 10
           minimum: 0
           nullable: true
           type: integer
         favorite:
           type: boolean
       required:
-      - public
+      - private
       - title
       type: object
     Review:
       example:
         reviewerId: 6
-        reviewDate: reviewDate
+        reviewDate: 2000-01-23
+        review: review
         filmId: 0
         rating: 1
         description: description
@@ -821,12 +1434,22 @@ components:
         completed:
           type: boolean
         reviewDate:
+          format: date
           nullable: true
           type: string
         rating:
+          maximum: 10
+          minimum: 0
           nullable: true
           type: integer
+        review:
+          maxLength: 1000
+          nullable: true
+          type: string
         description:
+          deprecated: true
+          description: Compatibility alias for review.
+          maxLength: 1000
           nullable: true
           type: string
         active:
@@ -844,27 +1467,79 @@ components:
       type: object
     ReviewCompletion:
       example:
-        reviewDate: reviewDate
+        reviewDate: 2000-01-23
+        review: review
         rating: 0
         description: description
       properties:
         reviewDate:
+          format: date
           type: string
         rating:
-          maximum: 5
+          maximum: 10
           minimum: 0
           type: integer
+        review:
+          maxLength: 1000
+          type: string
         description:
+          deprecated: true
+          description: Compatibility alias for review.
+          maxLength: 1000
           type: string
       type: object
     ReviewInvitation:
       example:
-        reviewerId: 0
+        reviewerId: 1
       properties:
         reviewerId:
+          minimum: 1
           type: integer
       required:
       - reviewerId
+      type: object
+    ReviewInvitationBatch:
+      example:
+        self: self
+        items:
+        - reviewerId: 6
+          reviewDate: 2000-01-23
+          review: review
+          filmId: 0
+          rating: 1
+          description: description
+          active: true
+          self: self
+          completed: true
+          reviewer:
+            name: name
+            self: self
+            id: 0
+            email: email
+        - reviewerId: 6
+          reviewDate: 2000-01-23
+          review: review
+          filmId: 0
+          rating: 1
+          description: description
+          active: true
+          self: self
+          completed: true
+          reviewer:
+            name: name
+            self: self
+            id: 0
+            email: email
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/Review"
+          type: array
+        self:
+          type: string
+      required:
+      - items
+      - self
       type: object
     Image:
       example:
@@ -917,6 +1592,28 @@ components:
       - userId
       - userName
       type: object
+    WebSocketStatusMessage:
+      properties:
+        typeMessage:
+          enum:
+          - login
+          - update
+          - logout
+          type: string
+        userId:
+          type: integer
+        userName:
+          type: string
+        filmId:
+          nullable: true
+          type: integer
+        filmTitle:
+          nullable: true
+          type: string
+      required:
+      - typeMessage
+      - userId
+      type: object
     MqttFilmMessage:
       properties:
         status:
@@ -926,8 +1623,10 @@ components:
           - deleted
           type: string
         userId:
-          type: string
+          nullable: true
+          type: integer
         userName:
+          nullable: true
           type: string
       required:
       - status

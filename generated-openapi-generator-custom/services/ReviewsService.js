@@ -78,13 +78,17 @@ const filmsFilmIdReviewsReviewerIdDELETE = (params = {}) => new Promise(
 * List reviews for a public film
 *
 * filmId Integer 
-* returns List
+* page Integer One-based page number. (optional)
+* limit Integer Maximum number of resources returned in one page. (optional)
+* returns ReviewPage
 * */
 const filmsPublicFilmIdReviewsGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
       const result = await DefaultServiceAdapter.filmsPublicFilmIdReviewsGET(
           params.filmId,
+          params.page,
+          params.limit,
       );
 
       resolve(Service.successResponse(result));
@@ -123,12 +127,36 @@ const filmsPublicFilmIdReviewsReviewerIdGET = (params = {}) => new Promise(
 /**
 * List films assigned to the current reviewer
 *
-* returns List
+* page Integer One-based page number. (optional)
+* limit Integer Maximum number of resources returned in one page. (optional)
+* returns FilmPage
 * */
 const filmsToReviewGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
       const result = await DefaultServiceAdapter.filmsToReviewGET(
+          params.page,
+          params.limit,
+      );
+
+      resolve(Service.successResponse(result));
+} catch (e) {
+      reject(Service.rejectResponse(
+        e.message || 'Invalid input',
+        e.status || 405,
+      ));
+    }
+  },
+);
+/**
+* Automatically issue review invitations for public films without invitations
+*
+* returns ReviewInvitationBatch
+* */
+const reviewsAutoInvitationsPOST = (params = {}) => new Promise(
+  async (resolve, reject) => {
+    try {
+      const result = await DefaultServiceAdapter.reviewsAutoInvitationsPOST(
       );
 
       resolve(Service.successResponse(result));
@@ -148,4 +176,5 @@ module.exports = {
   filmsPublicFilmIdReviewsGET,
   filmsPublicFilmIdReviewsReviewerIdGET,
   filmsToReviewGET,
+  reviewsAutoInvitationsPOST,
 };

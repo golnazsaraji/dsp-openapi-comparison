@@ -32,6 +32,10 @@ const filmsToReviewGET = async (request, response) => {
   await Controller.handleRequest(request, response, service.filmsToReviewGET);
 };
 
+const reviewsAutoInvitationsPOST = async (request, response) => {
+  await Controller.handleRequest(request, response, service.reviewsAutoInvitationsPOST);
+};
+
 
 module.exports = {
   filmsFilmIdReviewsCurrentPUT,
@@ -40,4 +44,5 @@ module.exports = {
   filmsPublicFilmIdReviewsGET,
   filmsPublicFilmIdReviewsReviewerIdGET,
   filmsToReviewGET,
+  reviewsAutoInvitationsPOST,
 };

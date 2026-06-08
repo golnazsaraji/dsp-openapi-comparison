@@ -28,13 +28,17 @@ const filmsPublicFilmIdGET = (params = {}) => new Promise(
 * List reviews for a public film
 *
 * filmId Integer 
-* returns List
+* page Integer One-based page number. (optional)
+* limit Integer Maximum number of resources returned in one page. (optional)
+* returns ReviewPage
 * */
 const filmsPublicFilmIdReviewsGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
       const result = await DefaultServiceAdapter.filmsPublicFilmIdReviewsGET(
           params.filmId,
+          params.page,
+          params.limit,
       );
 
       resolve(Service.successResponse(result));
@@ -73,12 +77,16 @@ const filmsPublicFilmIdReviewsReviewerIdGET = (params = {}) => new Promise(
 /**
 * List public films
 *
-* returns List
+* page Integer One-based page number. (optional)
+* limit Integer Maximum number of resources returned in one page. (optional)
+* returns FilmPage
 * */
 const filmsPublicGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
       const result = await DefaultServiceAdapter.filmsPublicGET(
+          params.page,
+          params.limit,
       );
 
       resolve(Service.successResponse(result));

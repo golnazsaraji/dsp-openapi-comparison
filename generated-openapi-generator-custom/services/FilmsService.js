@@ -95,12 +95,16 @@ const filmsFilmIdPUT = (params = {}) => new Promise(
 /**
 * List films owned by the current user
 *
-* returns List
+* page Integer One-based page number. (optional)
+* limit Integer Maximum number of resources returned in one page. (optional)
+* returns FilmPage
 * */
 const filmsGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
       const result = await DefaultServiceAdapter.filmsGET(
+          params.page,
+          params.limit,
       );
 
       resolve(Service.successResponse(result));
@@ -137,12 +141,16 @@ const filmsPOST = (params = {}) => new Promise(
 /**
 * List films assigned to the current reviewer
 *
-* returns List
+* page Integer One-based page number. (optional)
+* limit Integer Maximum number of resources returned in one page. (optional)
+* returns FilmPage
 * */
 const filmsToReviewGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
       const result = await DefaultServiceAdapter.filmsToReviewGET(
+          params.page,
+          params.limit,
       );
 
       resolve(Service.successResponse(result));

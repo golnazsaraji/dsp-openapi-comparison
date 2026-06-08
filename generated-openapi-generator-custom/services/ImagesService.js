@@ -53,6 +53,7 @@ const filmsFilmIdImagesImageIdDELETE = (params = {}) => new Promise(
 *
 * filmId Integer 
 * imageId Integer 
+* accept String Requested representation for a single image. (optional)
 * returns Image
 * */
 const filmsFilmIdImagesImageIdGET = (params = {}) => new Promise(
@@ -61,6 +62,7 @@ const filmsFilmIdImagesImageIdGET = (params = {}) => new Promise(
       const result = await DefaultServiceAdapter.filmsFilmIdImagesImageIdGET(
           params.filmId,
           params.imageId,
+          params.accept,
       );
 
       resolve(Service.successResponse(result));

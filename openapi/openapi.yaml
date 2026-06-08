@@ -39,6 +39,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/Error'
         '401':
           $ref: '#/components/responses/Error'
   /api/sessions/current:
@@ -62,9 +64,13 @@ paths:
       responses:
         '204':
           description: Logged out
+        '401':
+          $ref: '#/components/responses/Error'
   /api/users/online:
     get:
       tags: [realtime]
+      security:
+        - cookieAuth: []
       summary: Get current WebSocket online snapshot
       operationId: usersOnlineGET
       responses:
@@ -76,20 +82,25 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OnlineUser'
+        '401':
+          $ref: '#/components/responses/Error'
   /api/films/public:
     get:
       tags: [public-films]
       summary: List public films
       operationId: filmsPublicGET
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
       responses:
         '200':
-          description: Public films
+          description: Paginated public films
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Film'
+                $ref: '#/components/schemas/FilmPage'
+        '400':
+          $ref: '#/components/responses/Error'
   /api/films/public/{filmId}:
     get:
       tags: [public-films]
@@ -113,15 +124,17 @@ paths:
       operationId: filmsPublicFilmIdReviewsGET
       parameters:
         - $ref: '#/components/parameters/FilmId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
       responses:
         '200':
-          description: Reviews
+          description: Paginated reviews
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Review'
+                $ref: '#/components/schemas/ReviewPage'
+        '400':
+          $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
   /api/films/public/{filmId}/reviews/{reviewerId}:
@@ -139,6 +152,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
   /api/films:
@@ -148,15 +163,18 @@ paths:
         - cookieAuth: []
       summary: List films owned by the current user
       operationId: filmsGET
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
       responses:
         '200':
-          description: Owned films
+          description: Paginated owned films
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Film'
+                $ref: '#/components/schemas/FilmPage'
+        '400':
+          $ref: '#/components/responses/Error'
         '401':
           $ref: '#/components/responses/Error'
     post:
@@ -179,6 +197,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Film'
+        '400':
+          $ref: '#/components/responses/Error'
         '401':
           $ref: '#/components/responses/Error'
   /api/films/to-review:
@@ -188,15 +208,38 @@ paths:
         - cookieAuth: []
       summary: List films assigned to the current reviewer
       operationId: filmsToReviewGET
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
       responses:
         '200':
-          description: Films to review
+          description: Paginated films to review
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Film'
+                $ref: '#/components/schemas/FilmPage'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+  /api/reviews/auto-invitations:
+    post:
+      tags: [reviews]
+      security:
+        - cookieAuth: []
+      summary: Automatically issue review invitations for public films without invitations
+      operationId: reviewsAutoInvitationsPOST
+      responses:
+        '201':
+          description: Created review invitations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewInvitationBatch'
+        '401':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
   /api/films/{filmId}:
     get:
       tags: [films]
@@ -213,6 +256,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Film'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
     put:
@@ -237,7 +284,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Film'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
         '403':
+          $ref: '#/components/responses/Error'
+        '404':
           $ref: '#/components/responses/Error'
         '409':
           $ref: '#/components/responses/Error'
@@ -252,7 +305,11 @@ paths:
       responses:
         '204':
           description: Deleted
+        '401':
+          $ref: '#/components/responses/Error'
         '403':
+          $ref: '#/components/responses/Error'
+        '404':
           $ref: '#/components/responses/Error'
   /api/films/{filmId}/reviews:
     post:
@@ -277,7 +334,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
         '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
           $ref: '#/components/responses/Error'
   /api/films/{filmId}/reviews/{reviewerId}:
     delete:
@@ -292,6 +357,12 @@ paths:
       responses:
         '204':
           description: Removed
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
         '409':
           $ref: '#/components/responses/Error'
   /api/films/{filmId}/reviews/current:
@@ -317,6 +388,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
   /api/films/{filmId}/active:
     put:
       tags: [films, realtime]
@@ -333,7 +412,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Review'
+        '401':
+          $ref: '#/components/responses/Error'
         '403':
+          $ref: '#/components/responses/Error'
+        '404':
           $ref: '#/components/responses/Error'
         '409':
           $ref: '#/components/responses/Error'
@@ -347,6 +430,8 @@ paths:
       responses:
         '204':
           description: Active film cleared
+        '401':
+          $ref: '#/components/responses/Error'
   /api/films/{filmId}/images:
     get:
       tags: [images]
@@ -365,6 +450,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Image'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
     post:
       tags: [images]
       security:
@@ -391,6 +482,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Image'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '415':
+          $ref: '#/components/responses/Error'
   /api/films/{filmId}/images/{imageId}:
     get:
       tags: [images]
@@ -401,6 +502,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/FilmId'
         - $ref: '#/components/parameters/ImageId'
+        - $ref: '#/components/parameters/AcceptImage'
       responses:
         '200':
           description: Image metadata or image bytes
@@ -412,6 +514,10 @@ paths:
               schema:
                 type: string
                 format: binary
+            image/jpg:
+              schema:
+                type: string
+                format: binary
             image/jpeg:
               schema:
                 type: string
@@ -420,6 +526,12 @@ paths:
               schema:
                 type: string
                 format: binary
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
         '406':
           $ref: '#/components/responses/Error'
     delete:
@@ -434,6 +546,12 @@ paths:
       responses:
         '204':
           description: Deleted
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     cookieAuth:
@@ -447,18 +565,48 @@ components:
       required: true
       schema:
         type: integer
+        minimum: 1
     ReviewerId:
       name: reviewerId
       in: path
       required: true
       schema:
         type: integer
+        minimum: 1
     ImageId:
       name: imageId
       in: path
       required: true
       schema:
         type: integer
+        minimum: 1
+    Page:
+      name: page
+      in: query
+      required: false
+      description: One-based page number.
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of resources returned in one page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    AcceptImage:
+      name: accept
+      in: header
+      required: false
+      description: Requested representation for a single image.
+      schema:
+        type: string
+        enum: [application/json, image/png, image/jpg, image/jpeg, image/gif]
   responses:
     Error:
       description: Error response
@@ -473,6 +621,58 @@ components:
       properties:
         error:
           type: string
+    Pagination:
+      type: object
+      required: [page, limit, totalItems, totalPages]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+    FilmPage:
+      type: object
+      required: [items, pagination, self]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Film'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        self:
+          type: string
+        next:
+          type: string
+          nullable: true
+        prev:
+          type: string
+          nullable: true
+    ReviewPage:
+      type: object
+      required: [items, pagination, self]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        self:
+          type: string
+        next:
+          type: string
+          nullable: true
+        prev:
+          type: string
+          nullable: true
     LoginRequest:
       type: object
       required: [email, password]
@@ -483,6 +683,8 @@ components:
         password:
           type: string
           format: password
+          minLength: 6
+          maxLength: 20
     User:
       type: object
       required: [id, name, email, self]
@@ -498,44 +700,60 @@ components:
           type: string
     Film:
       type: object
-      required: [id, title, ownerId, public, favorite, self]
+      required: [id, title, owner, private, favorite, self]
       properties:
         id:
           type: integer
         title:
           type: string
+        owner:
+          type: integer
+          description: Identifier of the user who created the film.
         ownerId:
           type: integer
+          deprecated: true
+          description: Compatibility alias for owner.
+        private:
+          type: boolean
+          description: True when only the owner can access the film.
         public:
           type: boolean
+          deprecated: true
+          description: Compatibility alias equal to the inverse of private.
         watchDate:
           type: string
           nullable: true
+          format: date
         rating:
           type: integer
           nullable: true
           minimum: 0
-          maximum: 5
+          maximum: 10
         favorite:
           type: boolean
         self:
           type: string
     FilmInput:
       type: object
-      required: [title, public]
+      required: [title, private]
       properties:
         title:
           type: string
+        private:
+          type: boolean
         public:
           type: boolean
+          deprecated: true
+          description: Compatibility alias equal to the inverse of private.
         watchDate:
           type: string
           nullable: true
+          format: date
         rating:
           type: integer
           nullable: true
           minimum: 0
-          maximum: 5
+          maximum: 10
         favorite:
           type: boolean
     Review:
@@ -551,12 +769,22 @@ components:
         reviewDate:
           type: string
           nullable: true
+          format: date
         rating:
           type: integer
           nullable: true
+          minimum: 0
+          maximum: 10
+        review:
+          type: string
+          nullable: true
+          maxLength: 1000
         description:
           type: string
           nullable: true
+          deprecated: true
+          description: Compatibility alias for review.
+          maxLength: 1000
         active:
           type: boolean
         reviewer:
@@ -568,18 +796,36 @@ components:
       properties:
         reviewDate:
           type: string
+          format: date
         rating:
           type: integer
           minimum: 0
-          maximum: 5
+          maximum: 10
+        review:
+          type: string
+          maxLength: 1000
         description:
           type: string
+          deprecated: true
+          description: Compatibility alias for review.
+          maxLength: 1000
     ReviewInvitation:
       type: object
       required: [reviewerId]
       properties:
         reviewerId:
           type: integer
+          minimum: 1
+    ReviewInvitationBatch:
+      type: object
+      required: [items, self]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+        self:
+          type: string
     Image:
       type: object
       required: [id, filmId, name, mediaType, self]
@@ -609,6 +855,23 @@ components:
         filmTitle:
           type: string
           nullable: true
+    WebSocketStatusMessage:
+      type: object
+      required: [typeMessage, userId]
+      properties:
+        typeMessage:
+          type: string
+          enum: [login, update, logout]
+        userId:
+          type: integer
+        userName:
+          type: string
+        filmId:
+          type: integer
+          nullable: true
+        filmTitle:
+          type: string
+          nullable: true
     MqttFilmMessage:
       type: object
       required: [status]
@@ -617,6 +880,8 @@ components:
           type: string
           enum: [active, inactive, deleted]
         userId:
-          type: string
+          type: integer
+          nullable: true
         userName:
           type: string
+          nullable: true
