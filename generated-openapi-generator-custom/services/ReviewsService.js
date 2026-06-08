@@ -2,6 +2,19 @@
 const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
+const successStatusByOperation = {
+  sessionsPOST: 201,
+  sessionsCurrentDELETE: 204,
+  filmsPOST: 201,
+  reviewsAutoInvitationsPOST: 201,
+  filmsFilmIdDELETE: 204,
+  filmsFilmIdReviewsPOST: 201,
+  filmsFilmIdReviewsReviewerIdDELETE: 204,
+  usersCurrentActiveFilmDELETE: 204,
+  filmsFilmIdImagesPOST: 201,
+  filmsFilmIdImagesImageIdDELETE: 204,
+};
+
 /**
 * Complete the current user's review
 *
@@ -17,7 +30,7 @@ const filmsFilmIdReviewsCurrentPUT = (params = {}) => new Promise(
           params.reviewCompletion || params.body || params,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdReviewsCurrentPUT || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -41,7 +54,7 @@ const filmsFilmIdReviewsPOST = (params = {}) => new Promise(
           params.reviewInvitation || params.body || params,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdReviewsPOST || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -65,7 +78,7 @@ const filmsFilmIdReviewsReviewerIdDELETE = (params = {}) => new Promise(
           params.reviewerId,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdReviewsReviewerIdDELETE || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -91,7 +104,7 @@ const filmsPublicFilmIdReviewsGET = (params = {}) => new Promise(
           params.limit,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.filmsPublicFilmIdReviewsGET || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -115,7 +128,7 @@ const filmsPublicFilmIdReviewsReviewerIdGET = (params = {}) => new Promise(
           params.reviewerId,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.filmsPublicFilmIdReviewsReviewerIdGET || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -139,7 +152,7 @@ const filmsToReviewGET = (params = {}) => new Promise(
           params.limit,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.filmsToReviewGET || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -159,7 +172,7 @@ const reviewsAutoInvitationsPOST = (params = {}) => new Promise(
       const result = await DefaultServiceAdapter.reviewsAutoInvitationsPOST(
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.reviewsAutoInvitationsPOST || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',

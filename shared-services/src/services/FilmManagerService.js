@@ -416,13 +416,16 @@ class FilmManagerService {
     }
 
     filmsFilmIdImagesGET(filmId) {
-        if (!this.canReadFilm(this.currentUserId, this.film(filmId))) throw this.error('Image access denied.', 403);
+        const film = this.film(filmId);
+        if (!film) throw this.error('Film not found.', 404);
+        if (!this.canReadFilm(this.currentUserId, film)) throw this.error('Image access denied.', 403);
         return this.images.filter((image) => image.filmId === Number(filmId));
     }
 
     filmsFilmIdImagesPOST(filmId, imageInput = {}) {
         const film = this.film(filmId);
-        if (!film?.public || film.ownerId !== this.currentUserId) {
+        if (!film) throw this.error('Film not found.', 404);
+        if (!film.public || film.ownerId !== this.currentUserId) {
             throw this.error('Only the owner can add images to a public film.', 403);
         }
         const uploadedName = typeof imageInput === 'string' ? imageInput : imageInput.name;
@@ -443,6 +446,9 @@ class FilmManagerService {
     }
 
     filmsFilmIdImagesImageIdGET(filmId, imageId, accept = 'application/json') {
+        const film = this.film(filmId);
+        if (!film) throw this.error('Film not found.', 404);
+        if (!this.canReadFilm(this.currentUserId, film)) throw this.error('Image access denied.', 403);
         const image = this.images.find((item) => item.filmId === Number(filmId) && item.id === Number(imageId));
         if (!image) throw this.error('Image not found.', 404);
         const acceptedTypes = String(accept || 'application/json').split(',').map((item) => item.split(';')[0].trim());
@@ -452,6 +458,9 @@ class FilmManagerService {
     }
 
     filmsFilmIdImagesImageIdDELETE(filmId, imageId) {
+        const film = this.film(filmId);
+        if (!film) throw this.error('Film not found.', 404);
+        if (film.ownerId !== this.currentUserId) throw this.error('Only the owner can delete images from this film.', 403);
         const image = this.images.find((item) => item.filmId === Number(filmId) && item.id === Number(imageId));
         if (!image) throw this.error('Image not found.', 404);
         this.images = this.images.filter((item) => item !== image);

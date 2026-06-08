@@ -2,6 +2,19 @@
 const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
+const successStatusByOperation = {
+  sessionsPOST: 201,
+  sessionsCurrentDELETE: 204,
+  filmsPOST: 201,
+  reviewsAutoInvitationsPOST: 201,
+  filmsFilmIdDELETE: 204,
+  filmsFilmIdReviewsPOST: 201,
+  filmsFilmIdReviewsReviewerIdDELETE: 204,
+  usersCurrentActiveFilmDELETE: 204,
+  filmsFilmIdImagesPOST: 201,
+  filmsFilmIdImagesImageIdDELETE: 204,
+};
+
 /**
 * Logout
 *
@@ -13,7 +26,7 @@ const sessionsCurrentDELETE = (params = {}) => new Promise(
       const result = await DefaultServiceAdapter.sessionsCurrentDELETE(
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.sessionsCurrentDELETE || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -33,7 +46,7 @@ const sessionsCurrentGET = (params = {}) => new Promise(
       const result = await DefaultServiceAdapter.sessionsCurrentGET(
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.sessionsCurrentGET || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -55,7 +68,7 @@ const sessionsPOST = (params = {}) => new Promise(
           params.loginRequest || params.body || params,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.sessionsPOST || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',

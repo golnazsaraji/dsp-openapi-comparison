@@ -2,6 +2,19 @@
 const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
+const successStatusByOperation = {
+  sessionsPOST: 201,
+  sessionsCurrentDELETE: 204,
+  filmsPOST: 201,
+  reviewsAutoInvitationsPOST: 201,
+  filmsFilmIdDELETE: 204,
+  filmsFilmIdReviewsPOST: 201,
+  filmsFilmIdReviewsReviewerIdDELETE: 204,
+  usersCurrentActiveFilmDELETE: 204,
+  filmsFilmIdImagesPOST: 201,
+  filmsFilmIdImagesImageIdDELETE: 204,
+};
+
 /**
 * Get a public film
 *
@@ -15,7 +28,7 @@ const filmsPublicFilmIdGET = (params = {}) => new Promise(
           params.filmId,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.filmsPublicFilmIdGET || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -41,7 +54,7 @@ const filmsPublicFilmIdReviewsGET = (params = {}) => new Promise(
           params.limit,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.filmsPublicFilmIdReviewsGET || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -65,7 +78,7 @@ const filmsPublicFilmIdReviewsReviewerIdGET = (params = {}) => new Promise(
           params.reviewerId,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.filmsPublicFilmIdReviewsReviewerIdGET || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -89,7 +102,7 @@ const filmsPublicGET = (params = {}) => new Promise(
           params.limit,
       );
 
-      resolve(Service.successResponse(result));
+      resolve(Service.successResponse(result, successStatusByOperation.filmsPublicGET || 200));
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
