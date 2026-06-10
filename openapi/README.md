@@ -11,7 +11,7 @@ The complete five-lab specification index is in `../specifications/README.md`. T
 | `initial-example.yaml` | Small Film API example used as the initial generator-comparison specification. |
 | `openapi.yaml` | Canonical Film Manager API used by the final project. |
 
-The initial example is not only a YAML file. Its restored generated server and handwritten implementation are:
+The initial example is not only a YAML file. Its initial generated server and handwritten implementation are:
 
 | Part | Location |
 |---|---|

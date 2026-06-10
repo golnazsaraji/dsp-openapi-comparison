@@ -1,4 +1,4 @@
-# Restored Initial OpenAPI Generator Server
+# Initial OpenAPI Generator Server
 
 This directory contains the generated Node.js/Express server for the initial simple Film API example.
 

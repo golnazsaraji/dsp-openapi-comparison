@@ -1,6 +1,6 @@
 # Initial Example Adapter
 
-This adapter connects the restored initial generated OpenAPI example in `../../generated-openapi-generator/` to the handwritten implementation in `../../shared-services/src/services/InitialFilmService.js`.
+This adapter connects the initial generated OpenAPI example in `../../generated-openapi-generator/` to the handwritten implementation in `../../shared-services/src/services/InitialFilmService.js`.
 
 It is intentionally separate from the final Film Manager adapter because the initial example uses a smaller API shape:
 

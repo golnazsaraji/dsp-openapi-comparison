@@ -19,7 +19,7 @@ The generated projects access this logic through the adapter layer in `adapters/
 
 | Service | Purpose |
 |---|---|
-| `src/services/InitialFilmService.js` | Handwritten implementation for the restored initial simple OpenAPI example. |
+| `src/services/InitialFilmService.js` | Handwritten implementation for the initial simple OpenAPI example. |
 | `src/services/FilmManagerService.js` | Handwritten implementation for the final Film Manager API. |
 | `src/services/FilmService.js` | Compatibility export for older generated code; it re-exports `FilmManagerService.js`. |
 

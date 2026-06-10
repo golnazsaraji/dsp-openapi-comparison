@@ -11,7 +11,7 @@ This repository is one final project for the DSP laboratory work. It compares ge
 | `shared-services/` | Shared handwritten Film Manager logic plus Lab01-Lab05 artifacts. |
 | `adapters/` | Adapter layer connecting generated services to `shared-services/`. |
 | `out/` | Customized OpenAPI Generator templates. |
-| `generated-openapi-generator/` | Restored generated server for the initial simple OpenAPI example. |
+| `generated-openapi-generator/` | Initial generated server for the initial simple OpenAPI example. |
 | `generated-swaggerhub/` | Historical SwaggerHub / Swagger Codegen output kept for comparison. |
 | `generated-openapi-generator-custom/` | Regenerated server using the customized templates. |
 | `scripts/` | Smoke test and historical helper scripts. |
@@ -32,10 +32,10 @@ The visible OpenAPI specifications are:
 
 | File | Purpose |
 |---|---|
-| `openapi/initial-example.yaml` | Restored initial simple Film API example used at the start of the comparison. |
+| `openapi/initial-example.yaml` | Initial simple Film API example used at the start of the comparison. |
 | `openapi/openapi.yaml` | Canonical Film Manager API used by the final project. |
 
-The restored initial simple example is complete:
+The initial simple example is complete:
 
 | Part | Location |
 |---|---|
@@ -121,7 +121,7 @@ npm test
 
 The smoke test checks health, public reads, login/session behavior, paginated list responses, authenticated film CRUD, review invitation/removal, and active-film conflict handling.
 
-To run the restored initial simple example instead:
+To run the initial simple example instead:
 
 ```bash
 npm run start:initial

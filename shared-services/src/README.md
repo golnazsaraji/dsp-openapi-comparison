@@ -10,7 +10,7 @@ This directory contains the source files for the handwritten service layer.
 
 The files in this directory are not generated and are intended to be maintained manually.
 
-`services/InitialFilmService.js` contains the handwritten implementation for the restored
+`services/InitialFilmService.js` contains the handwritten implementation for the
 initial simple example. `services/FilmManagerService.js` contains the current shared
 implementation for the final Film Manager API. `services/FilmService.js` is kept as a
 compatibility entry point for older generated code and re-exports the final service.

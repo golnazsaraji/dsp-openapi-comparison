@@ -6,8 +6,8 @@ verification.
 ## Contents
 
 - `smoke-custom.js`: runs representative API requests against the generated custom server.
-- `smoke-initial.js`: runs representative API requests against the restored initial generated server.
-- `patch-openapi-generator.js`: historical helper that rewrites the restored initial OpenAPI Generator service file so it delegates to `adapters/initial-example/DefaultServiceAdapter.js`.
+- `smoke-initial.js`: runs representative API requests against the initial generated server.
+- `patch-openapi-generator.js`: historical helper that rewrites the initial OpenAPI Generator service file so it delegates to `adapters/initial-example/DefaultServiceAdapter.js`.
 - `patch-swaggerhub.js`: rewrites the generated SwaggerHub service file so it delegates to `adapters/swaggerhub/DefaultServiceAdapter.js`.
 
 The patch scripts are kept as historical examples. The final OpenAPI Generator workflow uses customized templates so regenerated services delegate to the adapter layer without a post-generation patch step.
@@ -24,7 +24,7 @@ Then, in another terminal, run the optional smoke test:
 npm test
 ```
 
-For the restored initial example:
+For the initial example:
 
 ```bash
 npm run start:initial

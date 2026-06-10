@@ -8,7 +8,7 @@ The adapters are intentionally placed outside the generated project directories.
 
 | Directory | Meaning |
 |---|---|
-| `initial-example/` | Adapter implementation used by the restored initial generated OpenAPI example. |
+| `initial-example/` | Adapter implementation used by the initial generated OpenAPI example. |
 | `openapi-generator/` | Adapter implementation used by the OpenAPI Generator server stub. |
 | `swaggerhub/` | Adapter implementation used by the SwaggerHub / Swagger Codegen server stub. |
 

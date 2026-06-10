@@ -2,7 +2,7 @@
 
 This directory contains the server stub generated through SwaggerHub / Swagger Codegen during the comparison experiment.
 
-It is kept as a historical comparison artifact. The final runnable project server is `../generated-openapi-generator-custom/`, and the restored initial OpenAPI Generator example is `../generated-openapi-generator/`.
+It is kept as a historical comparison artifact. The final runnable project server is `../generated-openapi-generator-custom/`, and the initial OpenAPI Generator example is `../generated-openapi-generator/`.
 
 ## What Is Here
 

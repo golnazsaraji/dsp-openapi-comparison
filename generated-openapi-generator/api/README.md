@@ -6,4 +6,4 @@ This directory contains the OpenAPI document copied or transformed into the gene
 
 - `openapi.yaml`: generated-project version of `../../openapi/initial-example.yaml` used by the OpenAPI Generator runtime.
 
-The final Film Manager source specification is `../../openapi/openapi.yaml`. This generated copy belongs to the restored initial example server.
+The final Film Manager source specification is `../../openapi/openapi.yaml`. This generated copy belongs to the initial example server.

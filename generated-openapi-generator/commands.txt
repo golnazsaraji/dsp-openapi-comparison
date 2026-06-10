@@ -1,6 +1,6 @@
 # Initial Example Commands
 
-This directory is the restored OpenAPI Generator output for `../openapi/initial-example.yaml`.
+This directory is the initial OpenAPI Generator output for `../openapi/initial-example.yaml`.
 
 From the repository root:
 

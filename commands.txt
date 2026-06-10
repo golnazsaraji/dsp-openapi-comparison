@@ -20,9 +20,9 @@ Run the final smoke test against an already running final server:
 npm test
 ```
 
-## Restored Initial Simple Example
+## Initial Simple Example
 
-Start the restored initial generated OpenAPI Generator server:
+Start the initial generated OpenAPI Generator server:
 
 ```bash
 npm run start:initial
