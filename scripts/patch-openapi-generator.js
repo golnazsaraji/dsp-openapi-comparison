@@ -25,7 +25,7 @@ const filmsGET = () => new Promise(
       const films = await DefaultServiceAdapter.filmsGET();
       resolve(Service.successResponse(films));
     } catch (e) {
-      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 405));
+      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 500));
     }
   },
 );
@@ -36,7 +36,7 @@ const filmsIdDELETE = ({ id }) => new Promise(
       const deleted = await DefaultServiceAdapter.filmsIdDELETE({ id });
       resolve(Service.successResponse({ deleted }));
     } catch (e) {
-      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 405));
+      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 500));
     }
   },
 );
@@ -47,7 +47,7 @@ const filmsIdGET = ({ id }) => new Promise(
       const film = await DefaultServiceAdapter.filmsIdGET({ id });
       resolve(Service.successResponse(film));
     } catch (e) {
-      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 405));
+      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 500));
     }
   },
 );
@@ -58,7 +58,7 @@ const filmsPOST = ({ newFilm }) => new Promise(
       const createdFilm = await DefaultServiceAdapter.filmsPOST({ newFilm });
       resolve(Service.successResponse(createdFilm, 201));
     } catch (e) {
-      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 405));
+      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 500));
     }
   },
 );
@@ -69,7 +69,7 @@ const statusGET = () => new Promise(
       const status = await DefaultServiceAdapter.statusGET();
       resolve(Service.successResponse(status));
     } catch (e) {
-      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 405));
+      reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 500));
     }
   },
 );

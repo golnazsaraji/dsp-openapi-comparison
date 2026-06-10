@@ -54,8 +54,14 @@ class FilmManagerService {
     }
 
     page(items, path, page = 1, limit = 10) {
-        const pageNumber = Math.max(Number(page) || 1, 1);
-        const pageLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+        const pageNumber = Number(page);
+        const pageLimit = Number(limit);
+        if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+            throw this.error('page must be a positive integer.', 400);
+        }
+        if (!Number.isInteger(pageLimit) || pageLimit < 1 || pageLimit > 100) {
+            throw this.error('limit must be an integer between 1 and 100.', 400);
+        }
         const totalItems = items.length;
         const totalPages = Math.ceil(totalItems / pageLimit);
         const start = (pageNumber - 1) * pageLimit;

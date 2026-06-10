@@ -30,7 +30,7 @@ const sessionsCurrentDELETE = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -50,7 +50,7 @@ const sessionsCurrentGET = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -72,7 +72,7 @@ const sessionsPOST = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },

@@ -32,7 +32,7 @@ const filmsFilmIdActivePUT = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -54,7 +54,7 @@ const filmsFilmIdDELETE = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -76,7 +76,7 @@ const filmsFilmIdGET = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -100,7 +100,7 @@ const filmsFilmIdPUT = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -124,7 +124,7 @@ const filmsGET = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -146,7 +146,7 @@ const filmsPOST = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -170,7 +170,7 @@ const filmsToReviewGET = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -190,7 +190,7 @@ const usersCurrentActiveFilmDELETE = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },

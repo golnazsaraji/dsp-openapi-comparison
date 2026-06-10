@@ -32,7 +32,7 @@ const filmsFilmIdImagesGET = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -56,7 +56,7 @@ const filmsFilmIdImagesImageIdDELETE = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -82,7 +82,7 @@ const filmsFilmIdImagesImageIdGET = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -106,7 +106,7 @@ const filmsFilmIdImagesPOST = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },

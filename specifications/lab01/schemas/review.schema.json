@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dsp.local/schemas/lab01/review.schema.json",
+  "title": "Review",
+  "description": "Lab01 Film Manager review invitation data structure.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["filmId", "reviewerId", "completed"],
+  "properties": {
+    "filmId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "reviewerId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "completed": {
+      "type": "boolean"
+    },
+    "reviewDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "rating": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "review": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "completed": { "const": true }
+        },
+        "required": ["completed"]
+      },
+      "then": {
+        "required": ["reviewDate", "rating", "review"]
+      },
+      "else": {
+        "not": {
+          "anyOf": [
+            { "required": ["reviewDate"] },
+            { "required": ["rating"] },
+            { "required": ["review"] }
+          ]
+        }
+      }
+    }
+  ]
+}

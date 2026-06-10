@@ -7,6 +7,7 @@ This repository is one final project for the DSP laboratory work. It compares ge
 | Path | Meaning |
 |---|---|
 | `openapi/` | OpenAPI specifications used by the project. |
+| `specifications/` | Evaluation-facing folders for Lab01-Lab05 specifications and course material. |
 | `shared-services/` | Shared handwritten Film Manager logic plus Lab01-Lab05 artifacts. |
 | `adapters/` | Adapter layer connecting generated services to `shared-services/`. |
 | `out/` | Customized OpenAPI Generator templates. |
@@ -18,6 +19,14 @@ This repository is one final project for the DSP laboratory work. It compares ge
 | `docs/` | Written comparison and implementation notes. |
 
 ## Specifications
+
+The five laboratory specifications are organized as separate folders in:
+
+```text
+specifications/
+```
+
+Each lab folder contains the course PDFs in `material/` plus the related JSON Schema, OpenAPI reference, Protocol Buffers, TCP protocol, WebSocket, or MQTT artifacts used by the project.
 
 The visible OpenAPI specifications are:
 
@@ -31,31 +40,31 @@ The canonical Film Manager contract includes session-based authentication, publi
 Lab01 Draft 7 JSON Schemas and valid JSON examples are stored in:
 
 ```text
-shared-services/lab01/
+specifications/lab01/
 ```
 
 Lab02 image-management notes and the gRPC converter contract are stored in:
 
 ```text
-shared-services/lab02/
+specifications/lab02/
 ```
 
 Lab03 TCP converter client/server sources and protocol notes are stored in:
 
 ```text
-shared-services/lab03/
+specifications/lab03/
 ```
 
-Lab04 WebSocket message schema and reusable online-list helpers are stored in:
+Lab04 WebSocket course material, message schema, and examples are stored in:
 
 ```text
-shared-services/lab04/
+specifications/lab04/
 ```
 
-Lab05 MQTT message schema, Mosquitto configuration, and MQTT client/server helpers are stored in:
+Lab05 MQTT course material, message schema, examples, and Mosquitto configuration are stored in:
 
 ```text
-shared-services/lab05/
+specifications/lab05/
 ```
 
 ## Architecture

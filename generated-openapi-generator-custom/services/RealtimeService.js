@@ -32,7 +32,7 @@ const filmsFilmIdActivePUT = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -52,7 +52,7 @@ const usersCurrentActiveFilmDELETE = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },
@@ -72,7 +72,7 @@ const usersOnlineGET = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },

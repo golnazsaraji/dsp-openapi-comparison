@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dsp.local/schemas/lab01/film.schema.json",
+  "title": "Film",
+  "description": "Lab01 Film Manager film data structure.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "owner", "private"],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owner": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "private": {
+      "type": "boolean"
+    },
+    "watchDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "rating": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "favorite": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "private": { "const": false }
+        },
+        "required": ["private"]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            { "required": ["watchDate"] },
+            { "required": ["rating"] },
+            { "required": ["favorite"] }
+          ]
+        }
+      }
+    }
+  ]
+}

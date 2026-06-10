@@ -30,7 +30,7 @@ const healthGET = (params = {}) => new Promise(
 } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
-        e.status || 405,
+        e.status || 500,
       ));
     }
   },

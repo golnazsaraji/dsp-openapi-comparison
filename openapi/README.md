@@ -2,6 +2,8 @@
 
 This directory contains the OpenAPI contracts that are part of the final project.
 
+The complete five-lab specification index is in `../specifications/README.md`. This directory intentionally contains only OpenAPI documents.
+
 ## Contents
 
 | File | Meaning |
