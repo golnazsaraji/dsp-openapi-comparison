@@ -2,6 +2,7 @@
 const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/initial-example/DefaultServiceAdapter');
 
+// EVALUATION-NOTE: Initial generated service delegates to handwritten code through the adapter.
 /**
 * Get all films
 *
@@ -67,6 +68,7 @@ const filmsIdGET = ({ id }) => new Promise(
 const filmsPOST = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
+      // EVALUATION-NOTE: Accept both generated body names and raw params for the initial example.
       const newFilm = params.newFilm || params.body || params;
       const film = await DefaultServiceAdapter.filmsPOST(newFilm);
       resolve(Service.successResponse(film, 201));

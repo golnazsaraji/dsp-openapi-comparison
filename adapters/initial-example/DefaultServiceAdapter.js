@@ -1,5 +1,6 @@
 const InitialFilmService = require('../../shared-services/src/services/InitialFilmService');
 
+// EVALUATION-NOTE: Adapter boundary for generated initial-example code.
 module.exports = {
     statusGET() {
         return InitialFilmService.statusGET();

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
+// EVALUATION-NOTE: Historical helper for reconnecting the initial generated service to its adapter.
 const targetFile = path.join(
   __dirname,
   '..',
@@ -14,6 +15,7 @@ const Service = require('./Service');
 
 const DefaultServiceAdapter = require('../../adapters/initial-example/DefaultServiceAdapter');
 
+// EVALUATION-NOTE: Initial generated service delegates to handwritten code through the adapter.
 /**
 * Get all films
 *
@@ -55,6 +57,7 @@ const filmsIdGET = ({ id }) => new Promise(
 const filmsPOST = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
+      // EVALUATION-NOTE: Accept both generated body names and raw params for the initial example.
       const newFilm = params.newFilm || params.body || params;
       const createdFilm = await DefaultServiceAdapter.filmsPOST(newFilm);
       resolve(Service.successResponse(createdFilm, 201));

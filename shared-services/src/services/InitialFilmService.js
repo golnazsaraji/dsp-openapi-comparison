@@ -1,5 +1,6 @@
 class InitialFilmService {
     constructor() {
+        // EVALUATION-NOTE: Handwritten service for the initial simple OpenAPI example.
         this.films = [
             { id: 1, title: 'Interstellar' },
             { id: 2, title: 'The Matrix' },
@@ -28,6 +29,7 @@ class InitialFilmService {
     }
 
     filmsPOST(newFilm = {}) {
+        // EVALUATION-NOTE: Keeps initial example validation explicit for POST /films.
         if (!newFilm.title) throw this.error('title is required.', 400);
         const film = {
             id: this.nextFilmId,

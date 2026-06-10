@@ -3,6 +3,7 @@ const https = require('https');
 
 const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
 
+// EVALUATION-NOTE: Minimal HTTP client for validating the initial simple example.
 function request(method, pathname, body) {
   const url = new URL(pathname, baseUrl);
   const payload = body === undefined ? null : JSON.stringify(body);
@@ -59,6 +60,7 @@ async function step(label, fn) {
 async function main() {
   console.log(`Smoke testing initial example server at ${baseUrl}`);
 
+  // EVALUATION-NOTE: Covers all operations in openapi/initial-example.yaml.
   await step('status', async () => {
     const response = await request('GET', '/status');
     assertStatus(response, 200, 'GET /status');

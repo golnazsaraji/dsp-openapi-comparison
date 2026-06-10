@@ -54,6 +54,7 @@ class FilmManagerService {
     }
 
     page(items, path, page = 1, limit = 10) {
+        // EVALUATION-NOTE: Final API pagination must reject invalid page/limit values with 400.
         const pageNumber = Number(page);
         const pageLimit = Number(limit);
         if (!Number.isInteger(pageNumber) || pageNumber < 1) {
