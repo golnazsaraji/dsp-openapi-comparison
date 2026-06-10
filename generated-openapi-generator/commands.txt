@@ -1,10 +1,24 @@
-in the root: 
-openapi-generator-cli generate -i openapi/openapi.yaml -g nodejs-express-server -o generated-openapi-generator
-node scripts/patch-openapi-generator.js
+# Initial Example Commands
 
-cd generated-openapi-generator
-npm start
+This directory is the restored OpenAPI Generator output for `../openapi/initial-example.yaml`.
 
+From the repository root:
+
+```bash
+npm run start:initial
+```
+
+Then, in another terminal:
+
+```bash
+npm run test:initial
+```
+
+Useful URLs:
+
+```text
+http://localhost:3000/status
 http://localhost:3000/films
 http://localhost:3000/films/1
-http://localhost:3000/status
+http://localhost:3000/api-docs
+```

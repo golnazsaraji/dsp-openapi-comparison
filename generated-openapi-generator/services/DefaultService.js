@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 const Service = require('./Service');
+const DefaultServiceAdapter = require('../../adapters/initial-example/DefaultServiceAdapter');
 
 /**
 * Get all films
@@ -9,8 +10,8 @@ const Service = require('./Service');
 const filmsGET = () => new Promise(
   async (resolve, reject) => {
     try {
-      resolve(Service.successResponse({
-      }));
+      const films = await DefaultServiceAdapter.filmsGET();
+      resolve(Service.successResponse(films));
     } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -28,9 +29,8 @@ const filmsGET = () => new Promise(
 const filmsIdDELETE = ({ id }) => new Promise(
   async (resolve, reject) => {
     try {
-      resolve(Service.successResponse({
-        id,
-      }));
+      const deleted = await DefaultServiceAdapter.filmsIdDELETE(id);
+      resolve(Service.successResponse({ deleted }, 204));
     } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -48,9 +48,8 @@ const filmsIdDELETE = ({ id }) => new Promise(
 const filmsIdGET = ({ id }) => new Promise(
   async (resolve, reject) => {
     try {
-      resolve(Service.successResponse({
-        id,
-      }));
+      const film = await DefaultServiceAdapter.filmsIdGET(id);
+      resolve(Service.successResponse(film));
     } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -65,12 +64,12 @@ const filmsIdGET = ({ id }) => new Promise(
 * newFilm NewFilm 
 * returns Film
 * */
-const filmsPOST = ({ newFilm }) => new Promise(
+const filmsPOST = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      resolve(Service.successResponse({
-        newFilm,
-      }));
+      const newFilm = params.newFilm || params.body || params;
+      const film = await DefaultServiceAdapter.filmsPOST(newFilm);
+      resolve(Service.successResponse(film, 201));
     } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
@@ -87,8 +86,8 @@ const filmsPOST = ({ newFilm }) => new Promise(
 const statusGET = () => new Promise(
   async (resolve, reject) => {
     try {
-      resolve(Service.successResponse({
-      }));
+      const status = await DefaultServiceAdapter.statusGET();
+      resolve(Service.successResponse(status));
     } catch (e) {
       reject(Service.rejectResponse(
         e.message || 'Invalid input',

@@ -1,9 +1,9 @@
 # Generated OpenAPI API Contract
 
-This directory contains the OpenAPI document copied or transformed into the generated OpenAPI Generator server project.
+This directory contains the OpenAPI document copied or transformed into the generated OpenAPI Generator server project for the initial simple example.
 
 ## Contents
 
-- `openapi.yaml`: generated-project version of the API contract used by the OpenAPI Generator runtime.
+- `openapi.yaml`: generated-project version of `../../openapi/initial-example.yaml` used by the OpenAPI Generator runtime.
 
-The canonical source specification for the project is kept in `../../openapi/openapi.yaml`. This generated copy belongs to the generated server project and may be replaced during regeneration.
+The final Film Manager source specification is `../../openapi/openapi.yaml`. This generated copy belongs to the restored initial example server.

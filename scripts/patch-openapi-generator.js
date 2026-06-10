@@ -12,7 +12,7 @@ const targetFile = path.join(
 const patchedContent = `/* eslint-disable no-unused-vars */
 const Service = require('./Service');
 
-const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
+const DefaultServiceAdapter = require('../../adapters/initial-example/DefaultServiceAdapter');
 
 /**
 * Get all films
@@ -33,8 +33,8 @@ const filmsGET = () => new Promise(
 const filmsIdDELETE = ({ id }) => new Promise(
   async (resolve, reject) => {
     try {
-      const deleted = await DefaultServiceAdapter.filmsIdDELETE({ id });
-      resolve(Service.successResponse({ deleted }));
+      const deleted = await DefaultServiceAdapter.filmsIdDELETE(id);
+      resolve(Service.successResponse({ deleted }, 204));
     } catch (e) {
       reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 500));
     }
@@ -44,7 +44,7 @@ const filmsIdDELETE = ({ id }) => new Promise(
 const filmsIdGET = ({ id }) => new Promise(
   async (resolve, reject) => {
     try {
-      const film = await DefaultServiceAdapter.filmsIdGET({ id });
+      const film = await DefaultServiceAdapter.filmsIdGET(id);
       resolve(Service.successResponse(film));
     } catch (e) {
       reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 500));
@@ -52,10 +52,11 @@ const filmsIdGET = ({ id }) => new Promise(
   },
 );
 
-const filmsPOST = ({ newFilm }) => new Promise(
+const filmsPOST = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const createdFilm = await DefaultServiceAdapter.filmsPOST({ newFilm });
+      const newFilm = params.newFilm || params.body || params;
+      const createdFilm = await DefaultServiceAdapter.filmsPOST(newFilm);
       resolve(Service.successResponse(createdFilm, 201));
     } catch (e) {
       reject(Service.rejectResponse(e.message || 'Invalid input', e.status || 500));

@@ -5,10 +5,12 @@ This directory contains concrete handwritten service implementations.
 ## Contents
 
 - `FilmManagerService.js`: in-memory Film Manager service used by the adapter layer.
+- `InitialFilmService.js`: in-memory service for the restored initial simple OpenAPI example.
 - `FilmService.js`: compatibility export for older generated code; it re-exports `FilmManagerService.js`.
 
-`FilmManagerService.js` represents the business logic of the DSP Film Manager API. Both
-generated servers call it indirectly through their corresponding adapter.
+`InitialFilmService.js` is called by `adapters/initial-example/DefaultServiceAdapter.js`
+from the restored initial generated server in `../../../generated-openapi-generator/`.
+`FilmManagerService.js` represents the business logic of the final DSP Film Manager API.
 
 ## Lab-Spec Coverage
 

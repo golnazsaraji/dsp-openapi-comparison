@@ -4,8 +4,8 @@ This directory contains the adapter used by the server stub generated through Sw
 
 ## Contents
 
-- `DefaultServiceAdapter.js`: maps SwaggerHub generated service calls to the shared handwritten `FilmService`.
+- `DefaultServiceAdapter.js`: maps SwaggerHub generated service calls to the shared handwritten `FilmManagerService`.
 
-The SwaggerHub generated service layer passes parameters more directly, for example `id` or `newFilm`. This adapter follows that calling convention and forwards the request to `shared-services/src/services/FilmService.js`.
+The SwaggerHub generated service layer passes parameters more directly, for example `id` or `newFilm`. This adapter follows that calling convention and forwards the request to `shared-services/src/services/FilmManagerService.js`.
 
 This file is handwritten and should remain outside the generated project directory.

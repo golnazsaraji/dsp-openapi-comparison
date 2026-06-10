@@ -11,8 +11,8 @@ This repository is one final project for the DSP laboratory work. It compares ge
 | `shared-services/` | Shared handwritten Film Manager logic plus Lab01-Lab05 artifacts. |
 | `adapters/` | Adapter layer connecting generated services to `shared-services/`. |
 | `out/` | Customized OpenAPI Generator templates. |
-| `generated-openapi-generator/` | Earlier OpenAPI Generator output kept for comparison. |
-| `generated-swaggerhub/` | SwaggerHub / Swagger Codegen output kept for comparison. |
+| `generated-openapi-generator/` | Restored generated server for the initial simple OpenAPI example. |
+| `generated-swaggerhub/` | Historical SwaggerHub / Swagger Codegen output kept for comparison. |
 | `generated-openapi-generator-custom/` | Regenerated server using the customized templates. |
 | `scripts/` | Smoke test and historical helper scripts. |
 | `postman/` | Postman collection for manual checks. |
@@ -34,6 +34,16 @@ The visible OpenAPI specifications are:
 |---|---|
 | `openapi/initial-example.yaml` | Restored initial simple Film API example used at the start of the comparison. |
 | `openapi/openapi.yaml` | Canonical Film Manager API used by the final project. |
+
+The restored initial simple example is complete:
+
+| Part | Location |
+|---|---|
+| OpenAPI specification | `openapi/initial-example.yaml` |
+| Generated OpenAPI Generator server | `generated-openapi-generator/` |
+| Handwritten service implementation | `shared-services/src/services/InitialFilmService.js` |
+| Adapter connecting generated code to handwritten code | `adapters/initial-example/DefaultServiceAdapter.js` |
+| Smoke test | `scripts/smoke-initial.js` |
 
 The canonical Film Manager contract includes session-based authentication, public film reads, owned-film CRUD, review invitations, review completion, the mandatory auto-invitation design endpoint, image metadata endpoints, active-film behavior, HATEOAS `self` links, paginated list responses, and explicit error responses.
 
@@ -83,13 +93,19 @@ The generated folders are treated as artifacts. Handwritten behavior is kept in 
 
 ## Running
 
-From the project root:
+Start the final Film Manager API from the project root:
 
 ```bash
 npm start
 ```
 
-This regenerates the customized OpenAPI Generator server from `openapi/openapi.yaml`, installs dependencies inside `generated-openapi-generator-custom/`, and starts the server.
+This runs `npm run start:final`: it regenerates the customized OpenAPI Generator server from `openapi/openapi.yaml`, installs dependencies inside `generated-openapi-generator-custom/`, and starts the server.
+
+To regenerate the final server without starting it:
+
+```bash
+npm run generate:final
+```
 
 If port `3000` is busy:
 
@@ -104,6 +120,18 @@ npm test
 ```
 
 The smoke test checks health, public reads, login/session behavior, paginated list responses, authenticated film CRUD, review invitation/removal, and active-film conflict handling.
+
+To run the restored initial simple example instead:
+
+```bash
+npm run start:initial
+```
+
+Then, in a second terminal:
+
+```bash
+npm run test:initial
+```
 
 ## Documentation
 

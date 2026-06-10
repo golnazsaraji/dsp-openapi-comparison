@@ -6,4 +6,4 @@ This directory contains the OpenAPI document included in the SwaggerHub / Swagge
 
 - `openapi.yaml`: generated-project version of the API contract used by the SwaggerHub generated runtime.
 
-The canonical source specification for the project is kept in `../../openapi/openapi.yaml`. This generated copy belongs to the generated server project and may be replaced during regeneration.
+This generated copy belongs to the historical SwaggerHub comparison artifact. The final canonical source specification for the project is kept in `../../openapi/openapi.yaml`.

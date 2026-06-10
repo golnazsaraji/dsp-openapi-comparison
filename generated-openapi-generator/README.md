@@ -1,28 +1,71 @@
-# Baseline OpenAPI Generator Output
+# Restored Initial OpenAPI Generator Server
 
-This directory contains the earlier Node.js/Express server generated with the default OpenAPI Generator workflow.
+This directory contains the generated Node.js/Express server for the initial simple Film API example.
 
-It is kept as a comparison artifact for the project documentation. The final runnable server is `../generated-openapi-generator-custom/`, which is regenerated from `../openapi/openapi.yaml` using the customized templates in `../out/`.
+It corresponds to:
 
-## Role In The Project
+```text
+../openapi/initial-example.yaml
+```
+
+This is the example the project started from before moving to the final Film Manager API in `../openapi/openapi.yaml`.
+
+## What Is Here
 
 | Path | Meaning |
 |---|---|
-| `api/openapi.yaml` | Generated copy of the OpenAPI contract used during the baseline experiment. |
-| `controllers/` | Generated controller layer. |
-| `services/` | Generated service stubs patched during the experiment. |
+| `api/openapi.yaml` | Generated copy of the initial example OpenAPI contract. |
+| `controllers/` | Generated OpenAPI Generator controllers. |
+| `services/` | Generated service layer patched to call the initial-example adapter. |
 | `utils/`, `expressServer.js`, `index.js` | Generated Express/OpenAPI runtime. |
 
-This directory is not the place for persistent handwritten business logic. The project keeps reusable behavior in `../shared-services/` and generator-specific wiring in `../adapters/`.
+## Handwritten Implementation
 
-## Related Documentation
+The generated service layer delegates to:
 
-- `../docs/02-experimental-comparison.md`
-- `../docs/03-openapi-generator-options-analysis.md`
+```text
+../adapters/initial-example/DefaultServiceAdapter.js
+```
 
-Use the repository-level commands for the final workflow:
+That adapter calls the handwritten service implementation:
+
+```text
+../shared-services/src/services/InitialFilmService.js
+```
+
+This keeps the initial example consistent with the final project architecture: generated API files remain separate from handwritten service logic.
+
+## Running
+
+From the repository root:
 
 ```bash
-npm start
-npm test
+npm run start:initial
+```
+
+Then, from another terminal:
+
+```bash
+npm run test:initial
+```
+
+Useful URLs after startup:
+
+```text
+http://localhost:3000/status
+http://localhost:3000/films
+http://localhost:3000/films/1
+http://localhost:3000/api-docs
+```
+
+If port `3000` is busy:
+
+```bash
+PORT=3101 BASE_URL=http://localhost:3101 npm run start:initial
+```
+
+and run:
+
+```bash
+BASE_URL=http://localhost:3101 npm run test:initial
 ```

@@ -1,11 +1,22 @@
-in the root: 
+# Historical SwaggerHub Commands
 
-node scripts/patch-swaggerhub.js
+This directory is kept only as a comparison artifact.
 
-cd generated-swaggerhub
+From `generated-swaggerhub/`:
+
+```bash
+npm install
 npm start
+```
 
+Useful URL:
 
-http://localhost:8080/films
-http://localhost:8080/films/1
-http://localhost:8080/api-docs
+```text
+http://localhost:8080/docs
+```
+
+The final evaluation workflow is run from the repository root with:
+
+```bash
+npm start
+```

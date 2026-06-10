@@ -1,6 +1,6 @@
 # Shared Services
 
-This directory contains handwritten business logic shared by both generated server implementations.
+This directory contains handwritten business logic used by the generated server implementations.
 
 The purpose of this directory is to keep application logic outside generated code. This makes the project safer to regenerate because changes to generated folders do not overwrite the core service implementation.
 
@@ -17,9 +17,15 @@ The purpose of this directory is to keep application logic outside generated cod
 
 The generated projects access this logic through the adapter layer in `adapters/`.
 
+| Service | Purpose |
+|---|---|
+| `src/services/InitialFilmService.js` | Handwritten implementation for the restored initial simple OpenAPI example. |
+| `src/services/FilmManagerService.js` | Handwritten implementation for the final Film Manager API. |
+| `src/services/FilmService.js` | Compatibility export for older generated code; it re-exports `FilmManagerService.js`. |
+
 ## Relation to the Lab Specifications
 
-The shared service currently implements the Film Manager behavior as five lab-oriented
+The final shared service currently implements the Film Manager behavior as five lab-oriented
 areas:
 
 | Lab area | Shared-service responsibility |
