@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dsp.local/schemas/lab05/mqtt_film_message_schema.json",
+  "title": "MqttFilmMessage",
+  "description": "Lab05 MQTT message for public film active-selection status.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["active", "inactive", "deleted"]
+    },
+    "userId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "userName": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "active" }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["userId", "userName"]
+      },
+      "else": {
+        "not": {
+          "anyOf": [
+            { "required": ["userId"] },
+            { "required": ["userName"] }
+          ]
+        }
+      }
+    }
+  ]
+}
