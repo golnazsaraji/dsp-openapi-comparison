@@ -1,0 +1,9 @@
+{
+  "id": 10,
+  "title": "The Matrix",
+  "owner": 1,
+  "private": true,
+  "watchDate": "2026-01-12",
+  "rating": 9,
+  "favorite": true
+}
