@@ -1,0 +1,22 @@
+# Historical SwaggerHub Commands
+
+This directory is kept only as a comparison artifact.
+
+From `generated-swaggerhub/`:
+
+```bash
+npm install
+npm start
+```
+
+Useful URL:
+
+```text
+http://localhost:8080/docs
+```
+
+The final evaluation workflow is run from the repository root with:
+
+```bash
+npm start
+```

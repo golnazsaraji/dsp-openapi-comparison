@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+.env
+*.zip
+*.log
+shared-services/lab03/bin/

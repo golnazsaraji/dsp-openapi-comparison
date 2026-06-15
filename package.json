@@ -1,0 +1,21 @@
+{
+  "name": "dsp-openapi-comparison",
+  "version": "1.0.0",
+  "description": "This project compares two ways of generating Node.js server stubs from the same OpenAPI specification.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "generate:final": "openapi-generator-cli generate -i openapi/openapi.yaml -g nodejs-express-server -t out -o generated-openapi-generator-custom",
+    "start": "npm run start:final",
+    "start:final": "npm run generate:final && cd generated-openapi-generator-custom && npm install && npm start",
+    "start:initial": "cd generated-openapi-generator && npm install && npm start",
+    "test": "npm run smoke",
+    "smoke": "node scripts/smoke-custom.js",
+    "test:initial": "node scripts/smoke-initial.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

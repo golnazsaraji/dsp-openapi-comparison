@@ -1,0 +1,41 @@
+openapi: 3.0.0
+info:
+  title: DSP API
+  version: 1.0.0
+servers:
+- url: http://localhost:3000
+- url: ""
+  description: ""
+paths:
+  /films:
+    get:
+      summary: Get all films
+      operationId: filmsGET
+      responses:
+        "200":
+          description: Success
+      x-swagger-router-controller: Default
+  /films/{id}:
+    get:
+      summary: Get film by id
+      operationId: filmsIdGET
+      parameters:
+      - name: id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Success
+      x-swagger-router-controller: Default
+components:
+  schemas:
+    Schema:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64

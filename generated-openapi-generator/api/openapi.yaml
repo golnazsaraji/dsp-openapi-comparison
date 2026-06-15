@@ -1,0 +1,127 @@
+openapi: 3.0.0
+info:
+  description: API used to compare OpenAPI Generator and SwaggerHub server stub generation.
+  title: DSP Film API
+  version: 1.0.0
+servers:
+- url: http://localhost:3000
+paths:
+  /films:
+    get:
+      operationId: filmsGET
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Film"
+                type: array
+          description: List of films
+      summary: Get all films
+      x-eov-operation-handler: controllers/DefaultController
+    post:
+      operationId: filmsPOST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewFilm"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Film"
+          description: Film created
+      summary: Create a new film
+      x-eov-operation-handler: controllers/DefaultController
+  /films/{id}:
+    delete:
+      operationId: filmsIdDELETE
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "204":
+          description: Film deleted
+        "404":
+          description: Film not found
+      summary: Delete film by id
+      x-eov-operation-handler: controllers/DefaultController
+    get:
+      operationId: filmsIdGET
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Film"
+          description: Film found
+        "404":
+          description: Film not found
+      summary: Get film by id
+      x-eov-operation-handler: controllers/DefaultController
+  /status:
+    get:
+      operationId: statusGET
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+          description: API status
+      summary: API status
+      x-eov-operation-handler: controllers/DefaultController
+components:
+  schemas:
+    Film:
+      example:
+        id: 1
+        title: Interstellar
+      properties:
+        id:
+          example: 1
+          type: integer
+        title:
+          example: Interstellar
+          type: string
+      required:
+      - id
+      - title
+      type: object
+    NewFilm:
+      example:
+        title: Inception
+      properties:
+        title:
+          example: Inception
+          type: string
+      required:
+      - title
+      type: object
+    Status:
+      example:
+        status: ok
+      properties:
+        status:
+          example: ok
+          type: string
+      required:
+      - status
+      type: object

@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dsp.local/schemas/lab04/ws_message_schema.json",
+  "title": "WebSocketStatusMessage",
+  "description": "Lab04 WebSocket message for logged-in users and active films.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["typeMessage", "userId"],
+  "properties": {
+    "typeMessage": {
+      "type": "string",
+      "enum": ["login", "update", "logout"]
+    },
+    "userId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "userName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "filmId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "filmTitle": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "typeMessage": { "const": "logout" }
+        },
+        "required": ["typeMessage"]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            { "required": ["userName"] },
+            { "required": ["filmId"] },
+            { "required": ["filmTitle"] }
+          ]
+        }
+      },
+      "else": {
+        "required": ["userName"]
+      }
+    },
+    {
+      "if": {
+        "required": ["filmId"]
+      },
+      "then": {
+        "required": ["filmTitle"]
+      }
+    },
+    {
+      "if": {
+        "required": ["filmTitle"]
+      },
+      "then": {
+        "required": ["filmId"]
+      }
+    }
+  ]
+}

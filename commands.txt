@@ -1,0 +1,37 @@
+# Project Commands
+
+## Final Film Manager API
+
+Regenerate the final custom OpenAPI Generator server:
+
+```bash
+npm run generate:final
+```
+
+Regenerate, install dependencies, and start the final server:
+
+```bash
+npm start
+```
+
+Run the final smoke test against an already running final server:
+
+```bash
+npm test
+```
+
+## Initial Simple Example
+
+Start the initial generated OpenAPI Generator server:
+
+```bash
+npm run start:initial
+```
+
+Run the initial example smoke test against an already running initial server:
+
+```bash
+npm run test:initial
+```
+
+Both smoke tests use `BASE_URL` when the server is not running on `http://localhost:3000`.
