@@ -103,9 +103,9 @@ Required tools:
 | Purpose | Package or tool |
 |---|---|
 | Clone and manage the repository | `git` |
-| Run the generated server and smoke tests | Node.js and `npm` |
-| Run OpenAPI Generator | Java JDK or JRE |
-| Regenerate the server from `openapi/openapi.yaml` | `@openapitools/openapi-generator-cli` |
+| Run the generated server and smoke tests | Node.js 18 or newer, with `npm` |
+| Run OpenAPI Generator | Java 17 JDK or JRE |
+| Regenerate the server from `openapi/openapi.yaml` | `@openapitools/openapi-generator-cli` using OpenAPI Generator `7.22.0` |
 
 The project pins OpenAPI Generator version `7.22.0` in `openapitools.json`. Install the
 CLI globally if it is not already available:
@@ -141,8 +141,8 @@ Optional Lab05 MQTT broker:
 sudo apt install mosquitto
 ```
 
-If the distribution Node.js package is old, use Node.js 18 or newer from NodeSource,
-`nvm`, or the official Node.js installer.
+If the distribution Node.js package is older than Node.js 18, use NodeSource, `nvm`, or
+the official Node.js installer instead.
 
 ### Fedora
 
