@@ -91,6 +91,93 @@ Shared handwritten services
 
 The generated folders are treated as artifacts. Handwritten behavior is kept in `shared-services/` and is reached through `adapters/`, which is the regeneration-safe part of the experiment.
 
+## Requirements
+
+The normal project workflow uses Node.js for the generated API server and smoke tests,
+and Java for OpenAPI Generator. The root `npm start` command regenerates the final server
+before starting it, so a fresh machine needs the OpenAPI Generator CLI available on the
+command line.
+
+Required tools:
+
+| Purpose | Package or tool |
+|---|---|
+| Clone and manage the repository | `git` |
+| Run the generated server and smoke tests | Node.js and `npm` |
+| Run OpenAPI Generator | Java JDK or JRE |
+| Regenerate the server from `openapi/openapi.yaml` | `@openapitools/openapi-generator-cli` |
+
+The project pins OpenAPI Generator version `7.22.0` in `openapitools.json`. Install the
+CLI globally if it is not already available:
+
+```bash
+npm install -g @openapitools/openapi-generator-cli
+```
+
+### macOS
+
+```bash
+brew install git node openjdk@17
+npm install -g @openapitools/openapi-generator-cli
+```
+
+Optional Lab05 MQTT broker:
+
+```bash
+brew install mosquitto
+```
+
+### Ubuntu / Debian
+
+```bash
+sudo apt update
+sudo apt install git nodejs npm openjdk-17-jdk
+npm install -g @openapitools/openapi-generator-cli
+```
+
+Optional Lab05 MQTT broker:
+
+```bash
+sudo apt install mosquitto
+```
+
+If the distribution Node.js package is old, use Node.js 18 or newer from NodeSource,
+`nvm`, or the official Node.js installer.
+
+### Fedora
+
+```bash
+sudo dnf install git nodejs npm java-17-openjdk-devel
+npm install -g @openapitools/openapi-generator-cli
+```
+
+Optional Lab05 MQTT broker:
+
+```bash
+sudo dnf install mosquitto
+```
+
+### Windows
+
+Using `winget`:
+
+```powershell
+winget install Git.Git
+winget install OpenJS.NodeJS.LTS
+winget install EclipseAdoptium.Temurin.17.JDK
+npm install -g @openapitools/openapi-generator-cli
+```
+
+Optional Lab05 MQTT broker:
+
+```powershell
+winget install EclipseMosquitto.Mosquitto
+```
+
+The generated final server installs its own npm dependencies from
+`generated-openapi-generator-custom/package.json` when `npm start` is executed from the
+project root.
+
 ## Running
 
 Start the final Film Manager API from the project root:
