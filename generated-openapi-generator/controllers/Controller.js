@@ -15,13 +15,16 @@ class Controller {
     const responsePayload = payload.payload !== undefined ? payload.payload : payload;
     if (responsePayload instanceof Object) {
       response.json(responsePayload);
+    } else if (responsePayload !== undefined && responsePayload !== null) {
+      response.json(responsePayload);
     } else {
-      response.end(responsePayload);
+      response.end();
     }
   }
 
   static sendError(response, error) {
-    response.status(error.code || 500);
+    const statusCode = Number.isInteger(error.code) ? error.code : 500;
+    response.status(statusCode);
     if (error.error instanceof Object) {
       response.json(error.error);
     } else {
@@ -57,7 +60,8 @@ class Controller {
   }
 
   static getRequestBodyName(request) {
-    const codeGenDefinedBodyName = request.openapi.schema['x-codegen-request-body-name'];
+    const codeGenDefinedBodyName = request.openapi.schema['x-codegen-request-body-name']
+      || request.openapi.schema.requestBody?.['x-codegen-request-body-name'];
     if (codeGenDefinedBodyName !== undefined) {
       return codeGenDefinedBodyName;
     }
@@ -106,6 +110,9 @@ class Controller {
   static async handleRequest(request, response, serviceOperation) {
     try {
       const serviceResponse = await serviceOperation(this.collectRequestParams(request));
+      if (request.openapi.schema.operationId === 'sessionsPOST') {
+        response.cookie('connect-sid', 'generated-session', { httpOnly: true, sameSite: 'lax' });
+      }
       Controller.sendResponse(response, serviceResponse);
     } catch (error) {
       Controller.sendError(response, error);

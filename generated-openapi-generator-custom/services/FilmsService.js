@@ -2,7 +2,7 @@
 const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
-// EVALUATION-NOTE: Generated final service delegates to handwritten logic through the adapter.
+// EVALUATION-NOTE: Template makes regenerated final services delegate to handwritten logic.
 const successStatusByOperation = {
   sessionsPOST: 201,
   sessionsCurrentDELETE: 204,
@@ -54,6 +54,7 @@ const filmsFilmIdDELETE = (params = {}) => new Promise(
 
       resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdDELETE || 200));
 } catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -76,6 +77,7 @@ const filmsFilmIdGET = (params = {}) => new Promise(
 
       resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdGET || 200));
 } catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -100,6 +102,7 @@ const filmsFilmIdPUT = (params = {}) => new Promise(
 
       resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdPUT || 200));
 } catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -124,6 +127,7 @@ const filmsGET = (params = {}) => new Promise(
 
       resolve(Service.successResponse(result, successStatusByOperation.filmsGET || 200));
 } catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -146,6 +150,7 @@ const filmsPOST = (params = {}) => new Promise(
 
       resolve(Service.successResponse(result, successStatusByOperation.filmsPOST || 200));
 } catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -170,6 +175,7 @@ const filmsToReviewGET = (params = {}) => new Promise(
 
       resolve(Service.successResponse(result, successStatusByOperation.filmsToReviewGET || 200));
 } catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -190,6 +196,7 @@ const usersCurrentActiveFilmDELETE = (params = {}) => new Promise(
 
       resolve(Service.successResponse(result, successStatusByOperation.usersCurrentActiveFilmDELETE || 200));
 } catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,

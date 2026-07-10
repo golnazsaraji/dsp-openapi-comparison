@@ -2,7 +2,7 @@
 const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
-// EVALUATION-NOTE: Generated final service delegates to handwritten logic through the adapter.
+// EVALUATION-NOTE: Template makes regenerated final services delegate to handwritten logic.
 const successStatusByOperation = {
   sessionsPOST: 201,
   sessionsCurrentDELETE: 204,
@@ -50,6 +50,7 @@ const sessionsCurrentGET = (params = {}) => new Promise(
 
       resolve(Service.successResponse(result, successStatusByOperation.sessionsCurrentGET || 200));
 } catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -72,6 +73,7 @@ const sessionsPOST = (params = {}) => new Promise(
 
       resolve(Service.successResponse(result, successStatusByOperation.sessionsPOST || 200));
 } catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,

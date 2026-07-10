@@ -1,71 +1,50 @@
-# Initial OpenAPI Generator Server
+# Customized OpenAPI Generator Server
 
-This directory contains the generated Node.js/Express server for the initial simple Film API example.
+This directory contains the final generated Node.js/Express server used by the project.
 
-It corresponds to:
+The server is generated from `../openapi/openapi.yaml` with the customized templates in `../out/`. Generated service files delegate to `../adapters/openapi-generator/DefaultServiceAdapter.js`, which forwards requests to the handwritten Film Manager implementation in `../shared-services/src/services/FilmManagerService.js`.
 
-```text
-../openapi/initial-example.yaml
-```
-
-This is the example the project started from before moving to the final Film Manager API in `../openapi/openapi.yaml`.
-
-## What Is Here
+## Role In The Project
 
 | Path | Meaning |
 |---|---|
-| `api/openapi.yaml` | Generated copy of the initial example OpenAPI contract. |
-| `controllers/` | Generated OpenAPI Generator controllers. |
-| `services/` | Generated service layer patched to call the initial-example adapter. |
+| `api/openapi.yaml` | Generated copy of the canonical OpenAPI contract. |
+| `controllers/` | Generated request/response controllers. |
+| `services/` | Generated adapter-facing service layer. |
 | `utils/`, `expressServer.js`, `index.js` | Generated Express/OpenAPI runtime. |
 
-## Handwritten Implementation
-
-The generated service layer delegates to:
-
-```text
-../adapters/initial-example/DefaultServiceAdapter.js
-```
-
-That adapter calls the handwritten service implementation:
-
-```text
-../shared-services/src/services/InitialFilmService.js
-```
-
-This keeps the initial example consistent with the final project architecture: generated API files remain separate from handwritten service logic.
+Do not put handwritten business logic directly in this directory. Regeneration may overwrite generated files. Persistent behavior belongs in `../shared-services/`, and generator-specific glue belongs in `../adapters/openapi-generator/` or `../out/`.
 
 ## Running
 
 From the repository root:
 
 ```bash
-npm run start:initial
+npm start
 ```
 
-Then, from another terminal:
+This regenerates this directory, installs its dependencies, and starts the server.
+
+To run this generated server directly after dependencies are installed:
 
 ```bash
-npm run test:initial
+npm start
 ```
 
-Useful URLs after startup:
+from inside `generated-openapi-generator-custom/`.
 
-```text
-http://localhost:3000/status
-http://localhost:3000/films
-http://localhost:3000/films/1
-http://localhost:3000/api-docs
-```
-
-If port `3000` is busy:
+The server defaults to port `3000`. Override it with:
 
 ```bash
-PORT=3101 BASE_URL=http://localhost:3101 npm run start:initial
+PORT=3101 BASE_URL=http://localhost:3101 npm start
 ```
 
-and run:
+## Checks
+
+From the repository root, run:
 
 ```bash
-BASE_URL=http://localhost:3101 npm run test:initial
+npm test
 ```
+
+The smoke test exercises health, login/session behavior, paginated film lists, authenticated film CRUD, review invitations, image metadata endpoints, and active-film conflict handling.
