@@ -62,19 +62,17 @@ Cleanup / Delete created film
 Cleanup / Clear active film
 ```
 
-The collection stores `createdFilmId` automatically after creating a film. Cleanup is
-last because the reviews, conflict scenario, and error checks need that temporary data to
-still exist.
+The backend stores data in memory, so created films and their IDs reset whenever the server
+restarts or regenerates. Postman collection variables persist until they are overwritten.
+After every server restart, run `Sessions / Login as Frank` and then
+`Films / Create public film`; the create request stores the current response ID in the
+collection variable `createdFilmId`. Cleanup is last because the reviews, conflict scenario,
+and error checks need that temporary data to still exist.
 
-Image upload is skipped by default in collection runs because Postman needs a local file
-selected manually. Run `Films / Create public film` first, then set this collection variable:
-
-```text
-runImageUpload = true
-```
-
-Then select a local PNG, JPG, or GIF file in `Images / Upload image` before running the
-image requests.
+`Images / Upload image` uses `{{createdFilmId}}`. Run the two requests above after the latest
+server start, then open `Images / Upload image` and select a local PNG, JPG, or GIF manually
+under **Body → form-data → image**. The committed collection intentionally contains no local
+file path.
 
 The `Error Cases / Reject unsupported image representation` request is skipped unless
 `createdImageId` exists, because it needs an uploaded image before it can verify the `406`

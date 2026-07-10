@@ -1,5 +1,7 @@
 const http = require('http');
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
 
 const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
 const cookieJar = new Map();
@@ -46,6 +48,49 @@ function request(method, pathname, body) {
 
     req.on('error', reject);
     if (payload) req.write(payload);
+    req.end();
+  });
+}
+
+function uploadImage(pathname) {
+  const url = new URL(pathname, baseUrl);
+  const transport = url.protocol === 'https:' ? https : http;
+  const boundary = `----dsp-smoke-${Date.now()}`;
+  const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+  const payload = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="image"; filename="smoke-upload.png"\r\nContent-Type: image/png\r\n\r\n`),
+    image,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+  const headers = {
+    'Content-Type': `multipart/form-data; boundary=${boundary}`,
+    'Content-Length': payload.length,
+  };
+
+  if (cookieJar.size > 0) {
+    headers.Cookie = [...cookieJar.entries()].map(([key, value]) => `${key}=${value}`).join('; ');
+  }
+
+  return new Promise((resolve, reject) => {
+    const req = transport.request(url, { method: 'POST', headers }, (res) => {
+      let raw = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => {
+        raw += chunk;
+      });
+      res.on('end', () => {
+        let data = raw;
+        try {
+          data = raw ? JSON.parse(raw) : null;
+        } catch (error) {
+          data = raw;
+        }
+        resolve({ status: res.statusCode, data });
+      });
+    });
+
+    req.on('error', reject);
+    req.write(payload);
     req.end();
   });
 }
@@ -155,6 +200,21 @@ async function main() {
     });
     assertStatus(response, [200, 201], `POST /api/films/${createdFilm.id}/reviews`);
     assert(response.data.reviewerId === 3, 'review invitation should target Karen');
+  });
+
+  await step('upload image to configured runtime storage', async () => {
+    const response = await uploadImage(`/api/films/${createdFilm.id}/images`);
+    assertStatus(response, [200, 201], `POST /api/films/${createdFilm.id}/images`);
+    assert(response.data.name, 'uploaded image response should include its stored name');
+    const uploadDirectory = path.resolve(
+      process.env.UPLOAD_DIR || path.join(__dirname, '..', 'runtime-data', 'uploaded_files'),
+    );
+    const uploadedFile = path.join(uploadDirectory, response.data.name);
+    assert(
+      fs.existsSync(uploadedFile),
+      `uploaded image should exist in ${uploadDirectory}`,
+    );
+    fs.unlinkSync(uploadedFile);
   });
 
   await step('remove review invitation', async () => {

@@ -15,6 +15,10 @@ The server is generated from `../openapi/openapi.yaml` with the customized templ
 
 Do not put handwritten business logic directly in this directory. Regeneration may overwrite generated files. Persistent behavior belongs in `../shared-services/`, and generator-specific glue belongs in `../adapters/openapi-generator/` or `../out/`.
 
+This generated directory is disposable. Uploaded files persist in
+`../runtime-data/uploaded_files/` by default. Set `UPLOAD_DIR` before starting the server to
+use another location; the upload directory is created automatically.
+
 ## Running
 
 From the repository root:

@@ -4,3 +4,5 @@ node_modules/
 *.zip
 *.log
 shared-services/lab03/bin/
+runtime-data/uploaded_files/*
+!runtime-data/uploaded_files/.gitkeep

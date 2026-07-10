@@ -1,3 +1,4 @@
+
 class FilmManagerService {
     constructor() {
         this.users = [
@@ -29,6 +30,27 @@ class FilmManagerService {
         this.loggedInUserIds = new Set();
     }
 
+
+    /*
+TODO (Future Improvement)
+
+Current implementation keeps error status codes inside the handwritten
+business layer, which is already regeneration-safe because these files are
+never overwritten.
+
+A future improvement could introduce a shared ApiError catalog generated or
+validated against the OpenAPI specification.
+
+Possible goals:
+
+- centralize reusable error definitions;
+- validate runtime error status codes against OpenAPI;
+- reduce duplicated status/message definitions;
+- preserve regeneration safety.
+
+Not implemented intentionally to keep the regeneration architecture simple and
+focused.
+*/
     error(message, status = 400) {
         const error = new Error(message);
         error.status = status;

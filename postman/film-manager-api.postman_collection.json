@@ -264,12 +264,21 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('film created', function () {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
-                  "  const film = pm.response.json();",
-                  "  pm.expect(film.id).to.exist;",
-                  "  pm.collectionVariables.set('createdFilmId', String(film.id));",
-                  "});"
+                  "let body;",
+                  "pm.test('film creation returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('film creation returns JSON with an id', function () {",
+                  "  body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('id');",
+                  "  pm.expect(String(body.id)).to.not.eql('');",
+                  "});",
+                  "if (pm.response.code === 201 && body && body.id !== undefined && body.id !== null && String(body.id) !== '') {",
+                  "  pm.collectionVariables.set('createdFilmId', String(body.id));",
+                  "  console.log('createdFilmId set to ' + body.id);",
+                  "} else {",
+                  "  console.error('Create public film did not return 201 with an id. Status: ' + pm.response.code + '. Body: ' + pm.response.text());",
+                  "}"
                 ]
               }
             }
@@ -400,9 +409,20 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.collectionVariables.get('runImageUpload') !== 'true') {",
-                  "  pm.execution.skipRequest();",
-                  "}"
+                  "const restartMessage = \"Run 'Create public film' after the latest server start before uploading an image. The backend uses in-memory data, so created IDs are reset when the server restarts.\";",
+                  "const baseUrl = pm.variables.get('baseUrl');",
+                  "const collectionFilmId = pm.collectionVariables.get('createdFilmId');",
+                  "const resolvedFilmId = pm.variables.get('createdFilmId');",
+                  "if (!baseUrl) {",
+                  "  throw new Error('baseUrl is not set. ' + restartMessage);",
+                  "}",
+                  "if (!collectionFilmId || !/^\\d+$/.test(String(collectionFilmId)) || Number(collectionFilmId) <= 0) {",
+                  "  throw new Error('createdFilmId must be a positive integer. ' + restartMessage);",
+                  "}",
+                  "if (String(resolvedFilmId) !== String(collectionFilmId)) {",
+                  "  throw new Error('A higher-precedence variable is shadowing the collection createdFilmId. Remove the environment, data, or local createdFilmId value and rerun Create public film.');",
+                  "}",
+                  "console.log('Upload target: baseUrl=' + baseUrl + ', createdFilmId=' + collectionFilmId);"
                 ]
               }
             },
@@ -411,9 +431,25 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.response.code === 200 || pm.response.code === 201) {",
-                  "  const image = pm.response.json();",
-                  "  if (image.id) pm.collectionVariables.set('createdImageId', String(image.id));",
+                  "const expectedFilmId = Number(pm.collectionVariables.get('createdFilmId'));",
+                  "if (pm.response.code !== 201) {",
+                  "  console.error('Upload failed. Status: ' + pm.response.code + '. Body: ' + pm.response.text());",
+                  "}",
+                  "pm.test('upload returns 201', function () {",
+                  "  pm.expect(pm.response.code, 'Upload did not return 201. The stored film ID may be stale after a server restart. Response: ' + pm.response.text()).to.eql(201);",
+                  "});",
+                  "let image;",
+                  "pm.test('upload returns valid JSON', function () {",
+                  "  image = pm.response.json();",
+                  "  pm.expect(image).to.be.an('object');",
+                  "});",
+                  "pm.test('upload response contains image metadata', function () {",
+                  "  pm.expect(image).to.include.all.keys('id', 'filmId', 'name', 'mediaType', 'self');",
+                  "  pm.expect(Number(image.filmId)).to.eql(expectedFilmId);",
+                  "});",
+                  "if (pm.response.code === 201 && image) {",
+                  "  pm.collectionVariables.set('createdImageId', String(image.id));",
+                  "  console.log('Upload succeeded for film ' + expectedFilmId);",
                   "}"
                 ]
               }

@@ -1,4 +1,10 @@
 const path = require('path');
+const fs = require('fs');
+
+const fileUploadPath = path.resolve(
+  process.env.UPLOAD_DIR || path.join(__dirname, '..', 'runtime-data', 'uploaded_files'),
+);
+fs.mkdirSync(fileUploadPath, { recursive: true });
 
 const config = {
   ROOT_DIR: __dirname,
@@ -10,6 +16,6 @@ const config = {
 };
 config.OPENAPI_YAML = path.join(config.ROOT_DIR, 'api', 'openapi.yaml');
 config.FULL_PATH = `${config.URL_PATH}:${config.URL_PORT}/${config.BASE_VERSION}`;
-config.FILE_UPLOAD_PATH = path.join(config.PROJECT_DIR, 'uploaded_files');
+config.FILE_UPLOAD_PATH = fileUploadPath;
 
 module.exports = config;
