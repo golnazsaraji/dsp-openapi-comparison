@@ -3,18 +3,8 @@ const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
 // EVALUATION-NOTE: Template makes regenerated final services delegate to handwritten logic.
-const successStatusByOperation = {
-  sessionsPOST: 201,
-  sessionsCurrentDELETE: 204,
-  filmsPOST: 201,
-  reviewsAutoInvitationsPOST: 201,
-  filmsFilmIdDELETE: 204,
-  filmsFilmIdReviewsPOST: 201,
-  filmsFilmIdReviewsReviewerIdDELETE: 204,
-  usersCurrentActiveFilmDELETE: 204,
-  filmsFilmIdImagesPOST: 201,
-  filmsFilmIdImagesImageIdDELETE: 204,
-};
+// Success status codes and any response cookie are looked up from the adapter (outside this
+// generated/regenerated file) instead of being hard-coded per operationId in this template.
 
 /**
 * List images for a public owned/review film
@@ -29,7 +19,11 @@ const filmsFilmIdImagesGET = (params = {}) => new Promise(
           params.filmId,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdImagesGET || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdImagesGET'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdImagesGET'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -54,7 +48,11 @@ const filmsFilmIdImagesImageIdDELETE = (params = {}) => new Promise(
           params.imageId,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdImagesImageIdDELETE || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdImagesImageIdDELETE'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdImagesImageIdDELETE'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -81,7 +79,11 @@ const filmsFilmIdImagesImageIdGET = (params = {}) => new Promise(
           params.accept,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdImagesImageIdGET || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdImagesImageIdGET'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdImagesImageIdGET'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -106,7 +108,11 @@ const filmsFilmIdImagesPOST = (params = {}) => new Promise(
           params.image,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdImagesPOST || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdImagesPOST'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdImagesPOST'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
