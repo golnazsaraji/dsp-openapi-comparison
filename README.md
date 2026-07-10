@@ -235,5 +235,6 @@ The main written analysis is in:
 - `docs/02-experimental-comparison.md`
 - `docs/03-openapi-generator-options-analysis.md`
 - `docs/04-service-url-reference.md`
+- `docs/05-success-codes-and-upload-storage.md`
 
 These documents explain the generator comparison, the regeneration-safe adapter approach, and the final custom-template workflow.
