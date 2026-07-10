@@ -1,19 +1,35 @@
 /* eslint-disable no-unused-vars */
 const Service = require('./Service');
-const DefaultServiceAdapter = require('../../adapters/initial-example/DefaultServiceAdapter');
+const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
-// EVALUATION-NOTE: Initial generated service delegates to handwritten code through the adapter.
+// EVALUATION-NOTE: Template makes regenerated final services delegate to handwritten logic.
+const successStatusByOperation = {
+  sessionsPOST: 201,
+  sessionsCurrentDELETE: 204,
+  filmsPOST: 201,
+  reviewsAutoInvitationsPOST: 201,
+  filmsFilmIdDELETE: 204,
+  filmsFilmIdReviewsPOST: 201,
+  filmsFilmIdReviewsReviewerIdDELETE: 204,
+  usersCurrentActiveFilmDELETE: 204,
+  filmsFilmIdImagesPOST: 201,
+  filmsFilmIdImagesImageIdDELETE: 204,
+};
+
 /**
 * Get all films
 *
 * returns List
 * */
-const filmsGET = () => new Promise(
+const filmsGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const films = await DefaultServiceAdapter.filmsGET();
-      resolve(Service.successResponse(films));
-    } catch (e) {
+      const result = await DefaultServiceAdapter.filmsGET(
+      );
+
+      resolve(Service.successResponse(result, successStatusByOperation.filmsGET || 200));
+} catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -27,12 +43,16 @@ const filmsGET = () => new Promise(
 * id Integer 
 * no response value expected for this operation
 * */
-const filmsIdDELETE = ({ id }) => new Promise(
+const filmsIdDELETE = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const deleted = await DefaultServiceAdapter.filmsIdDELETE(id);
-      resolve(Service.successResponse({ deleted }, 204));
-    } catch (e) {
+      const result = await DefaultServiceAdapter.filmsIdDELETE(
+          params.id,
+      );
+
+      resolve(Service.successResponse(result, successStatusByOperation.filmsIdDELETE || 200));
+} catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -46,12 +66,16 @@ const filmsIdDELETE = ({ id }) => new Promise(
 * id Integer 
 * returns Film
 * */
-const filmsIdGET = ({ id }) => new Promise(
+const filmsIdGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const film = await DefaultServiceAdapter.filmsIdGET(id);
-      resolve(Service.successResponse(film));
-    } catch (e) {
+      const result = await DefaultServiceAdapter.filmsIdGET(
+          params.id,
+      );
+
+      resolve(Service.successResponse(result, successStatusByOperation.filmsIdGET || 200));
+} catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -68,11 +92,13 @@ const filmsIdGET = ({ id }) => new Promise(
 const filmsPOST = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      // EVALUATION-NOTE: Accept both generated body names and raw params for the initial example.
-      const newFilm = params.newFilm || params.body || params;
-      const film = await DefaultServiceAdapter.filmsPOST(newFilm);
-      resolve(Service.successResponse(film, 201));
-    } catch (e) {
+      const result = await DefaultServiceAdapter.filmsPOST(
+          params.newFilm || params.body || params,
+      );
+
+      resolve(Service.successResponse(result, successStatusByOperation.filmsPOST || 200));
+} catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,
@@ -85,12 +111,15 @@ const filmsPOST = (params = {}) => new Promise(
 *
 * returns Status
 * */
-const statusGET = () => new Promise(
+const statusGET = (params = {}) => new Promise(
   async (resolve, reject) => {
     try {
-      const status = await DefaultServiceAdapter.statusGET();
-      resolve(Service.successResponse(status));
-    } catch (e) {
+      const result = await DefaultServiceAdapter.statusGET(
+      );
+
+      resolve(Service.successResponse(result, successStatusByOperation.statusGET || 200));
+} catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
         e.message || 'Invalid input',
         e.status || 500,

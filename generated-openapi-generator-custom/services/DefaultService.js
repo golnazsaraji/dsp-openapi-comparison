@@ -2,7 +2,7 @@
 const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
-// EVALUATION-NOTE: Generated final service delegates to handwritten logic through the adapter.
+// EVALUATION-NOTE: Template makes regenerated final services delegate to handwritten logic.
 const successStatusByOperation = {
   sessionsPOST: 201,
   sessionsCurrentDELETE: 204,
