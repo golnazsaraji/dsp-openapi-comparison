@@ -13,7 +13,8 @@ This repository is one final project for the DSP laboratory work. It compares ge
 | `out/` | Customized OpenAPI Generator templates. |
 | `generated-openapi-generator/` | Initial generated server for the initial simple OpenAPI example. |
 | `generated-swaggerhub/` | Historical SwaggerHub / Swagger Codegen output kept for comparison. |
-| `generated-openapi-generator-custom/` | Regenerated server using the customized templates. |
+| `generated-openapi-generator-custom/` | Disposable regenerated server using the customized templates. |
+| `runtime-data/uploaded_files/` | Persistent uploaded files kept outside the disposable generated server. |
 | `scripts/` | Smoke test and historical helper scripts. |
 | `postman/` | Postman collection for manual checks. |
 | `docs/` | Written comparison and implementation notes. |
@@ -94,9 +95,8 @@ The generated folders are treated as artifacts. Handwritten behavior is kept in 
 ## Requirements
 
 The normal project workflow uses Node.js for the generated API server and smoke tests,
-and Java for OpenAPI Generator. The root `npm start` command regenerates the final server
-before starting it, so a fresh machine needs the OpenAPI Generator CLI available on the
-command line.
+and Java for OpenAPI Generator. Use `npm run generate:final` when the specification or
+templates change; `npm start` starts the already-generated final server.
 
 Required tools:
 
@@ -186,9 +186,16 @@ Start the final Film Manager API from the project root:
 npm start
 ```
 
-This runs `npm run start:final`: it regenerates the customized OpenAPI Generator server from `openapi/openapi.yaml`, installs dependencies inside `generated-openapi-generator-custom/`, and starts the server.
+This runs `npm run start:final`: the generated package installs its dependencies through
+its existing `prestart` lifecycle and starts the already-generated server. It does not
+regenerate the server.
 
-To regenerate the final server without starting it:
+The `generated-openapi-generator-custom/` directory is disposable. Uploaded files persist
+under `runtime-data/uploaded_files/` by default. Set `UPLOAD_DIR` to use a different upload
+directory; the server creates the selected directory automatically.
+
+To regenerate the final server without starting it, for example after changing the OpenAPI
+contract or templates:
 
 ```bash
 npm run generate:final
@@ -228,5 +235,6 @@ The main written analysis is in:
 - `docs/02-experimental-comparison.md`
 - `docs/03-openapi-generator-options-analysis.md`
 - `docs/04-service-url-reference.md`
+- `docs/05-success-codes-and-upload-storage.md`
 
 These documents explain the generator comparison, the regeneration-safe adapter approach, and the final custom-template workflow.

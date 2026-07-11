@@ -9,7 +9,7 @@
   "scripts": {
     "generate:final": "openapi-generator-cli generate -i openapi/openapi.yaml -g nodejs-express-server -t out -o generated-openapi-generator-custom",
     "start": "npm run start:final",
-    "start:final": "npm run generate:final && cd generated-openapi-generator-custom && npm install && npm start",
+    "start:final": "cd generated-openapi-generator-custom && npm start",
     "start:initial": "cd generated-openapi-generator && npm install && npm start",
     "test": "npm run smoke",
     "smoke": "node scripts/smoke-custom.js",

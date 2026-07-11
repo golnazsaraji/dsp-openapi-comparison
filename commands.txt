@@ -8,7 +8,7 @@ Regenerate the final custom OpenAPI Generator server:
 npm run generate:final
 ```
 
-Regenerate, install dependencies, and start the final server:
+Install dependencies and start the already-generated final server:
 
 ```bash
 npm start
