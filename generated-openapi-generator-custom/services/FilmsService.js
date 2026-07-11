@@ -61,7 +61,7 @@ const filmsFilmIdDELETE = (params = {}) => new Promise(
   },
 );
 /**
-* Get an accessible film
+* Get a private film owned by the current user
 *
 * filmId Integer 
 * returns Film
@@ -92,7 +92,7 @@ const filmsFilmIdGET = (params = {}) => new Promise(
 *
 * filmId Integer 
 * filmInput FilmInput 
-* returns Film
+* no response value expected for this operation
 * */
 const filmsFilmIdPUT = (params = {}) => new Promise(
   async (resolve, reject) => {

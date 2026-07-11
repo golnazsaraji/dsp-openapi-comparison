@@ -23,12 +23,13 @@ const FilmManagerService = require('../../shared-services/src/services/FilmManag
 // generated output directory, but it must still be updated manually whenever
 // an API operation with a non-200 success response is added or changed.
 const successStatusByOperation = {
-    sessionsPOST: 201,
+    filmsFilmIdPUT: 204,
     sessionsCurrentDELETE: 204,
     filmsPOST: 201,
     reviewsAutoInvitationsPOST: 201,
     filmsFilmIdDELETE: 204,
     filmsFilmIdReviewsPOST: 201,
+    filmsFilmIdReviewsCurrentPUT: 204,
     filmsFilmIdReviewsReviewerIdDELETE: 204,
     usersCurrentActiveFilmDELETE: 204,
     filmsFilmIdImagesPOST: 201,
@@ -43,9 +44,6 @@ function successStatus(operationId) {
 // Centralizes the login-cookie decision here instead of a hard-coded operationId string
 // check inside the generated (and regenerated) Controller.js.
 function responseCookie(operationId) {
-    if (operationId === 'sessionsPOST') {
-        return { name: 'connect-sid', value: 'generated-session', options: { httpOnly: true, sameSite: 'lax' } };
-    }
     return undefined;
 }
 

@@ -1,11 +1,14 @@
 
+const bcrypt = require('bcrypt');
+const { AsyncLocalStorage } = require('async_hooks');
+
 class FilmManagerService {
     constructor() {
         this.users = [
-            { id: 1, name: 'Alice', email: 'alice@example.com', password: 'password' },
-            { id: 2, name: 'Frank', email: 'frank@example.com', password: 'password' },
-            { id: 3, name: 'Karen', email: 'karen@example.com', password: 'password' },
-            { id: 4, name: 'Rene', email: 'rene@example.com', password: 'password' },
+            { id: 1, name: 'Alice', email: 'alice@example.com', passwordHash: bcrypt.hashSync('password', 10) },
+            { id: 2, name: 'Frank', email: 'frank@example.com', passwordHash: bcrypt.hashSync('password', 10) },
+            { id: 3, name: 'Karen', email: 'karen@example.com', passwordHash: bcrypt.hashSync('password', 10) },
+            { id: 4, name: 'Rene', email: 'rene@example.com', passwordHash: bcrypt.hashSync('password', 10) },
         ];
 
         this.films = [
@@ -25,9 +28,27 @@ class FilmManagerService {
         this.images = [];
         this.nextFilmId = 5;
         this.nextImageId = 1;
-        this.currentUserId = 1;
+        this.requestIdentity = new AsyncLocalStorage();
+        this.fallbackUserId = null;
         this.allowedImageMediaTypes = new Set(['image/png', 'image/jpg', 'image/jpeg', 'image/gif']);
         this.loggedInUserIds = new Set();
+    }
+
+    get currentUserId() {
+        return this.requestIdentity.getStore()?.userId ?? this.fallbackUserId;
+    }
+
+    set currentUserId(userId) {
+        this.fallbackUserId = userId == null ? null : Number(userId);
+    }
+
+    runAsUser(userId, callback) {
+        return this.requestIdentity.run({ userId: userId == null ? null : Number(userId) }, callback);
+    }
+
+    requireUser() {
+        if (!this.currentUserId) throw this.error('Authentication required.', 401);
+        return this.currentUserId;
     }
 
 
@@ -62,20 +83,47 @@ focused.
         return user && { id: user.id, name: user.name, email: user.email, self: `/api/users/${user.id}` };
     }
 
+    internalUser(id) {
+        return this.users.find((item) => item.id === Number(id));
+    }
+
+    async verifyCredentials(email, password) {
+        const user = this.users.find((candidate) => candidate.email === email);
+        if (!user || !(await bcrypt.compare(password, user.passwordHash))) return null;
+        return user;
+    }
+
+    recordLogin(userId) {
+        this.loggedInUserIds.add(Number(userId));
+    }
+
+    recordLogout(userId) {
+        this.loggedInUserIds.delete(Number(userId));
+    }
+
     film(id) {
         return this.films.find((item) => item.id === Number(id));
     }
 
     filmDto(film, publicRoute = false) {
-        return film && {
-            ...film,
+        if (!film) return undefined;
+        const dto = {
+            id: film.id,
+            title: film.title,
             owner: film.ownerId,
             private: !film.public,
             self: publicRoute ? `/api/films/public/${film.id}` : `/api/films/${film.id}`,
         };
+        if (film.public) dto.reviews = `/api/films/public/${film.id}/reviews`;
+        if (!film.public) {
+            if (film.watchDate != null) dto.watchDate = film.watchDate;
+            if (film.rating != null) dto.rating = film.rating;
+            dto.favorite = Boolean(film.favorite);
+        }
+        return dto;
     }
 
-    page(items, path, page = 1, limit = 10) {
+    page(items, path, collectionName, page = 1, limit = 10) {
         // EVALUATION-NOTE: Final API pagination must reject invalid page/limit values with 400.
         const pageNumber = Number(page);
         const pageLimit = Number(limit);
@@ -91,27 +139,34 @@ focused.
         const separator = path.includes('?') ? '&' : '?';
         const pagePath = (targetPage) => `${path}${separator}page=${targetPage}&limit=${pageLimit}`;
 
-        return {
-            items: items.slice(start, start + pageLimit),
-            pagination: {
-                page: pageNumber,
-                limit: pageLimit,
-                totalItems,
-                totalPages,
-            },
+        const result = {
+            totalPages,
+            currentPage: pageNumber,
+            totalItems,
+            [collectionName]: items.slice(start, start + pageLimit),
             self: pagePath(pageNumber),
-            next: pageNumber < totalPages ? pagePath(pageNumber + 1) : null,
-            prev: pageNumber > 1 && totalPages > 0 ? pagePath(pageNumber - 1) : null,
         };
+        if (pageNumber < totalPages) result.next = pagePath(pageNumber + 1);
+        if (pageNumber > 1 && totalPages > 0) result.prev = pagePath(pageNumber - 1);
+        return result;
     }
 
     reviewDto(review) {
-        return review && {
-            ...review,
-            review: review.description,
+        if (!review) return undefined;
+        const dto = {
+            filmId: review.filmId,
+            reviewerId: review.reviewerId,
+            completed: Boolean(review.completed),
             reviewer: this.user(review.reviewerId),
             self: `/api/films/public/${review.filmId}/reviews/${review.reviewerId}`,
         };
+        if (review.active !== undefined) dto.active = Boolean(review.active);
+        if (review.completed) {
+            dto.reviewDate = review.reviewDate;
+            dto.rating = review.rating;
+            dto.review = review.description;
+        }
+        return dto;
     }
 
     canReadFilm(userId, film) {
@@ -126,27 +181,52 @@ focused.
         return { status: 'ok' };
     }
 
+    apiGET() {
+        return {
+            self: '/api',
+            publicFilms: '/api/films/public',
+            ownedFilms: '/api/films',
+            invitedFilms: '/api/films/to-review',
+            reviewAssignments: '/api/films/public/assignments',
+            users: '/api/users',
+            session: '/api/sessions/current',
+        };
+    }
+
     statusGET() {
         return this.healthGET();
     }
 
-    sessionsPOST(loginRequest = {}) {
-        const user = this.users.find((candidate) => (
-            candidate.email === loginRequest.email && candidate.password === loginRequest.password
-        ));
+    async sessionsPOST(loginRequest = {}) {
+        const user = await this.verifyCredentials(loginRequest.email, loginRequest.password);
         if (!user) throw this.error('Invalid email or password.', 401);
         this.currentUserId = user.id;
-        this.loggedInUserIds.add(user.id);
+        this.recordLogin(user.id);
         return this.user(user.id);
     }
 
     sessionsCurrentGET() {
+        this.requireUser();
         return this.user(this.currentUserId);
     }
 
     sessionsCurrentDELETE() {
-        this.loggedInUserIds.delete(this.currentUserId);
+        this.requireUser();
+        this.recordLogout(this.currentUserId);
+        this.currentUserId = null;
         return null;
+    }
+
+    usersGET() {
+        this.requireUser();
+        return this.users.map((user) => this.user(user.id));
+    }
+
+    usersUserIdGET(userId) {
+        this.requireUser();
+        const user = this.user(userId);
+        if (!user) throw this.error('User not found.', 404);
+        return user;
     }
 
     usersOnlineGET() {
@@ -213,7 +293,7 @@ focused.
 
     filmsPublicGET(page, limit) {
         const films = this.films.filter((film) => film.public).map((film) => this.filmDto(film, true));
-        return this.page(films, '/api/films/public', page, limit);
+        return this.page(films, '/api/films/public', 'films', page, limit);
     }
 
     filmsPublicFilmIdGET(filmId) {
@@ -225,7 +305,7 @@ focused.
     filmsPublicFilmIdReviewsGET(filmId, page, limit) {
         this.filmsPublicFilmIdGET(filmId);
         const reviews = this.reviews.filter((review) => review.filmId === Number(filmId)).map((review) => this.reviewDto(review));
-        return this.page(reviews, `/api/films/public/${filmId}/reviews`, page, limit);
+        return this.page(reviews, `/api/films/public/${filmId}/reviews`, 'reviews', page, limit);
     }
 
     filmsPublicFilmIdReviewsReviewerIdGET(filmId, reviewerId) {
@@ -236,8 +316,11 @@ focused.
     }
 
     filmsGET(page, limit) {
-        const films = this.films.filter((film) => film.ownerId === this.currentUserId).map((film) => this.filmDto(film));
-        return this.page(films, '/api/films', page, limit);
+        const userId = this.requireUser();
+        const films = this.films
+            .filter((film) => !film.public && film.ownerId === userId)
+            .map((film) => this.filmDto(film));
+        return this.page(films, '/api/films', 'films', page, limit);
     }
 
     getFilms() {
@@ -245,12 +328,16 @@ focused.
     }
 
     filmsPOST(filmInput = {}) {
+        const userId = this.requireUser();
         if (!filmInput.title) throw this.error('title is required');
         const isPublic = filmInput.private !== undefined ? !filmInput.private : Boolean(filmInput.public);
+        if (isPublic && (filmInput.watchDate != null || filmInput.rating != null || filmInput.favorite != null)) {
+            throw this.error('Public films cannot contain watchDate, rating, or favorite.', 400);
+        }
         const film = {
             id: this.nextFilmId,
             title: filmInput.title,
-            ownerId: this.currentUserId,
+            ownerId: userId,
             public: isPublic,
             watchDate: filmInput.watchDate || null,
             rating: filmInput.rating ?? null,
@@ -268,14 +355,16 @@ focused.
     }
 
     filmsToReviewGET(page, limit) {
+        const userId = this.requireUser();
         const filmIds = new Set(
-            this.reviews.filter((review) => review.reviewerId === this.currentUserId).map((review) => review.filmId),
+            this.reviews.filter((review) => review.reviewerId === userId).map((review) => review.filmId),
         );
-        const films = this.films.filter((film) => filmIds.has(film.id)).map((film) => this.filmDto(film));
-        return this.page(films, '/api/films/to-review', page, limit);
+        const films = this.films.filter((film) => film.public && filmIds.has(film.id)).map((film) => this.filmDto(film, true));
+        return this.page(films, '/api/films/to-review', 'films', page, limit);
     }
 
     reviewsAutoInvitationsPOST() {
+        const userId = this.requireUser();
         const created = [];
         const invitationCounts = new Map(this.users.map((user) => [
             user.id,
@@ -283,11 +372,11 @@ focused.
         ]));
 
         this.films
-            .filter((film) => film.public)
+            .filter((film) => film.public && film.ownerId === userId)
             .filter((film) => !this.reviews.some((review) => review.filmId === film.id))
             .forEach((film) => {
                 const reviewer = [...this.users].sort((left, right) => (
-                    invitationCounts.get(left.id) - invitationCounts.get(right.id)
+                    invitationCounts.get(left.id) - invitationCounts.get(right.id) || left.id - right.id
                 ))[0];
                 const review = {
                     filmId: film.id,
@@ -303,16 +392,16 @@ focused.
                 created.push(this.reviewDto(review));
             });
 
-        if (created.length === 0) throw this.error('No public films without invitations.', 409);
         return {
             items: created,
-            self: '/api/reviews/auto-invitations',
+            self: '/api/films/public/assignments',
         };
     }
 
     filmsFilmIdGET(filmId) {
+        const userId = this.requireUser();
         const film = this.film(filmId);
-        if (!this.canReadFilm(this.currentUserId, film)) throw this.error('Film not found.', 404);
+        if (!film || film.public || film.ownerId !== userId) throw this.error('Private film not found.', 404);
         return this.filmDto(film);
     }
 
@@ -325,9 +414,10 @@ focused.
     }
 
     filmsFilmIdPUT(filmId, filmInput = {}) {
+        const userId = this.requireUser();
         const film = this.film(filmId);
         if (!film) throw this.error('Film not found.', 404);
-        if (film.ownerId !== this.currentUserId) throw this.error('Only the owner can update this film.', 403);
+        if (film.ownerId !== userId) throw this.error('Only the owner can update this film.', 403);
         const requestedPublic = filmInput.private !== undefined ? !filmInput.private : filmInput.public;
         if (requestedPublic !== undefined && Boolean(requestedPublic) !== film.public) {
             throw this.error('Film visibility cannot be changed.', 409);
@@ -338,13 +428,14 @@ focused.
             rating: filmInput.rating ?? film.rating,
             favorite: filmInput.favorite ?? film.favorite,
         });
-        return this.filmDto(film);
+        return null;
     }
 
     filmsFilmIdDELETE(filmId) {
+        const userId = this.requireUser();
         const film = this.film(filmId);
         if (!film) throw this.error('Film not found.', 404);
-        if (film.ownerId !== this.currentUserId) throw this.error('Only the owner can delete this film.', 403);
+        if (film.ownerId !== userId) throw this.error('Only the owner can delete this film.', 403);
         const deletedWasPublic = film.public;
         this.films = this.films.filter((item) => item.id !== film.id);
         this.reviews = this.reviews.filter((review) => review.filmId !== film.id);
@@ -362,20 +453,35 @@ focused.
     }
 
     filmsFilmIdReviewsPOST(filmId, body = {}) {
+        const userId = this.requireUser();
         const film = this.film(filmId);
         if (!film) throw this.error('Film not found.', 404);
         if (!film.public) throw this.error('Only public films can receive review invitations.', 409);
-        if (film.ownerId !== this.currentUserId) throw this.error('Only the owner can invite reviewers.', 403);
-        if (!this.user(body.reviewerId)) throw this.error('Reviewer does not exist.', 404);
-        let review = this.reviews.find((item) => item.filmId === film.id && item.reviewerId === Number(body.reviewerId));
-        if (!review) {
-            review = { filmId: film.id, reviewerId: Number(body.reviewerId), completed: false, reviewDate: null, rating: null, description: null, active: false };
+        if (film.ownerId !== userId) throw this.error('Only the owner can invite reviewers.', 403);
+        const invitations = Array.isArray(body) ? body : [body];
+        if (invitations.length === 0) throw this.error('At least one invitation is required.', 400);
+        invitations.forEach((invitation) => {
+            if (invitation.filmId != null && Number(invitation.filmId) !== film.id) {
+                throw this.error('Invitation filmId must match the route filmId.', 400);
+            }
+            if (!this.user(invitation.reviewerId)) throw this.error('Reviewer does not exist.', 404);
+            if (this.reviews.some((item) => item.filmId === film.id && item.reviewerId === Number(invitation.reviewerId))) {
+                throw this.error('Review invitation already exists.', 409);
+            }
+        });
+        const created = invitations.map((invitation) => {
+            const review = { filmId: film.id, reviewerId: Number(invitation.reviewerId), completed: false, reviewDate: null, rating: null, description: null, active: false };
             this.reviews.push(review);
-        }
-        return this.reviewDto(review);
+            return this.reviewDto(review);
+        });
+        return created;
     }
 
     filmsFilmIdReviewsReviewerIdDELETE(filmId, reviewerId) {
+        const userId = this.requireUser();
+        const film = this.film(filmId);
+        if (!film) throw this.error('Film not found.', 404);
+        if (film.ownerId !== userId) throw this.error('Only the owner can remove invitations.', 403);
         const review = this.reviews.find((item) => item.filmId === Number(filmId) && item.reviewerId === Number(reviewerId));
         if (!review) throw this.error('Invitation not found.', 404);
         if (review.completed) throw this.error('Completed reviews cannot be removed.', 409);
@@ -384,13 +490,17 @@ focused.
     }
 
     filmsFilmIdReviewsCurrentPUT(filmId, body = {}) {
-        const review = this.reviews.find((item) => item.filmId === Number(filmId) && item.reviewerId === this.currentUserId);
+        const userId = this.requireUser();
+        const review = this.reviews.find((item) => item.filmId === Number(filmId) && item.reviewerId === userId);
         if (!review) throw this.error('Review invitation not found.', 404);
+        if (body.completed !== true || !body.reviewDate || body.rating == null || !body.review) {
+            throw this.error('completed, reviewDate, rating, and review are required.', 400);
+        }
         review.completed = true;
         review.reviewDate = body.reviewDate || new Date().toISOString().slice(0, 10);
         review.rating = body.rating ?? review.rating;
-        review.description = body.review ?? body.description ?? review.description;
-        return this.reviewDto(review);
+        review.description = body.review;
+        return null;
     }
 
     filmsFilmIdActivePUT(filmId) {

@@ -11,11 +11,20 @@
     "start": "npm run start:final",
     "start:final": "cd generated-openapi-generator-custom && npm start",
     "start:initial": "cd generated-openapi-generator && npm install && npm start",
-    "test": "npm run smoke",
+    "test": "npm run test:lab01 && npm run smoke",
+    "test:lab01": "node scripts/lab01-schema-tests.js && node scripts/lab01-service-tests.js",
     "smoke": "node scripts/smoke-custom.js",
     "test:initial": "node scripts/smoke-initial.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "bcrypt": "^6.0.0",
+    "express-session": "^1.18.2",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0"
+  }
 }

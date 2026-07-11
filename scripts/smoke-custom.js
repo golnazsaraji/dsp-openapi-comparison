@@ -123,12 +123,31 @@ async function main() {
     assert(response.data.status === 'ok', 'health response should be ok');
   });
 
+  await step('discover API links', async () => {
+    const response = await request('GET', '/api');
+    assertStatus(response, 200, 'GET /api');
+    assert(response.data.publicFilms === '/api/films/public', 'API entry point should link to public films');
+  });
+
   await step('list public films', async () => {
     const response = await request('GET', '/api/films/public');
     assertStatus(response, 200, 'GET /api/films/public');
-    assert(Array.isArray(response.data.items), 'public films response should contain an items array');
-    assert(response.data.items.length > 0, 'public films response should not be empty');
-    assert(response.data.pagination.page === 1, 'public films response should include pagination');
+    assert(Array.isArray(response.data.films), 'public films response should contain a films array');
+    assert(response.data.films.length > 0, 'public films response should not be empty');
+    assert(response.data.currentPage === 1, 'public films response should include currentPage');
+  });
+
+  await step('reject protected request without a session', async () => {
+    const response = await request('GET', '/api/films');
+    assertStatus(response, 401, 'GET /api/films without session');
+  });
+
+  await step('reject invalid credentials', async () => {
+    const response = await request('POST', '/api/sessions', {
+      email: 'frank@example.com',
+      password: 'incorrect',
+    });
+    assertStatus(response, 401, 'POST /api/sessions with invalid credentials');
   });
 
   await step('login as Frank', async () => {
@@ -136,9 +155,9 @@ async function main() {
       email: 'frank@example.com',
       password: 'password',
     });
-    assertStatus(response, [200, 201], 'POST /api/sessions');
+    assertStatus(response, 200, 'POST /api/sessions');
     assert(response.data.id === 2, 'Frank should have id 2');
-    assert(cookieJar.has('connect-sid'), 'login should set connect-sid cookie');
+    assert(cookieJar.has('connect.sid'), 'login should set connect.sid cookie');
   });
 
   await step('read current session', async () => {
@@ -154,11 +173,18 @@ async function main() {
     assert(response.data.some((user) => user.userId === 2), 'online users should include Frank after login');
   });
 
+  await step('list users without authentication data', async () => {
+    const response = await request('GET', '/api/users');
+    assertStatus(response, 200, 'GET /api/users');
+    assert(response.data.some((user) => user.id === 2), 'user list should include Frank');
+    assert(response.data.every((user) => user.password === undefined && user.passwordHash === undefined), 'user responses must not expose password data');
+  });
+
   await step('list films to review', async () => {
     const response = await request('GET', '/api/films/to-review');
     assertStatus(response, 200, 'GET /api/films/to-review');
-    assert(Array.isArray(response.data.items), 'films to review should contain an items array');
-    assert(response.data.pagination.page === 1, 'films to review should include pagination');
+    assert(Array.isArray(response.data.films), 'films to review should contain a films array');
+    assert(response.data.currentPage === 1, 'films to review should include pagination');
   });
 
   await step('select active film', async () => {
@@ -173,9 +199,6 @@ async function main() {
     const response = await request('POST', '/api/films', {
       title: 'Smoke Test Film',
       private: false,
-      watchDate: '2026-06-03',
-      rating: 8,
-      favorite: false,
     });
     assertStatus(response, [200, 201], 'POST /api/films');
     assert(response.data.title === 'Smoke Test Film', 'created film title should match');
@@ -186,20 +209,17 @@ async function main() {
     const response = await request('PUT', `/api/films/${createdFilm.id}`, {
       title: 'Smoke Test Film Updated',
       private: false,
-      watchDate: '2026-06-03',
-      rating: 9,
-      favorite: true,
     });
-    assertStatus(response, 200, `PUT /api/films/${createdFilm.id}`);
-    assert(response.data.title === 'Smoke Test Film Updated', 'updated film title should match');
+    assertStatus(response, 204, `PUT /api/films/${createdFilm.id}`);
   });
 
   await step('invite reviewer to created film', async () => {
-    const response = await request('POST', `/api/films/${createdFilm.id}/reviews`, {
+    const response = await request('POST', `/api/films/${createdFilm.id}/reviews`, [{
+      filmId: createdFilm.id,
       reviewerId: 3,
-    });
-    assertStatus(response, [200, 201], `POST /api/films/${createdFilm.id}/reviews`);
-    assert(response.data.reviewerId === 3, 'review invitation should target Karen');
+    }]);
+    assertStatus(response, 201, `POST /api/films/${createdFilm.id}/reviews`);
+    assert(response.data[0].reviewerId === 3, 'review invitation should target Karen');
   });
 
   await step('upload image to configured runtime storage', async () => {
@@ -236,6 +256,13 @@ async function main() {
 
     const conflict = await request('PUT', '/api/films/2/active');
     assertStatus(conflict, 409, 'PUT /api/films/2/active as Karen');
+  });
+
+  await step('logout invalidates the session', async () => {
+    const logout = await request('DELETE', '/api/sessions/current');
+    assertStatus(logout, 204, 'DELETE /api/sessions/current');
+    const current = await request('GET', '/api/sessions/current');
+    assertStatus(current, 401, 'GET /api/sessions/current after logout');
   });
 
   console.log('Smoke test passed.');
