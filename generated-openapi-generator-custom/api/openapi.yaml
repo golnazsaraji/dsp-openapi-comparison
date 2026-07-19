@@ -505,7 +505,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ReviewInvitationBatch"
+                items:
+                  $ref: "#/components/schemas/Review"
+                type: array
           description: Created review invitations
         "401":
           content:
@@ -1069,18 +1071,13 @@ paths:
           minimum: 1
           type: integer
         style: simple
-      - description: Requested representation for a single image.
+      - description: Requested representation for a single image. Unsupported media
+          types receive 406.
         explode: false
         in: header
         name: accept
         required: false
         schema:
-          enum:
-          - application/json
-          - image/png
-          - image/jpg
-          - image/jpeg
-          - image/gif
           type: string
         style: simple
       responses:
@@ -1198,18 +1195,13 @@ components:
         type: integer
       style: form
     AcceptImage:
-      description: Requested representation for a single image.
+      description: Requested representation for a single image. Unsupported media
+        types receive 406.
       explode: false
       in: header
       name: accept
       required: false
       schema:
-        enum:
-        - application/json
-        - image/png
-        - image/jpg
-        - image/jpeg
-        - image/gif
         type: string
       style: simple
   responses:
@@ -1562,47 +1554,6 @@ components:
           type: integer
       required:
       - reviewerId
-      type: object
-    ReviewInvitationBatch:
-      example:
-        self: self
-        items:
-        - reviewerId: 5
-          reviewDate: 2000-01-23
-          review: review
-          filmId: 5
-          rating: 2
-          active: true
-          self: self
-          completed: true
-          reviewer:
-            name: name
-            self: self
-            id: 0
-            email: email
-        - reviewerId: 5
-          reviewDate: 2000-01-23
-          review: review
-          filmId: 5
-          rating: 2
-          active: true
-          self: self
-          completed: true
-          reviewer:
-            name: name
-            self: self
-            id: 0
-            email: email
-      properties:
-        items:
-          items:
-            $ref: "#/components/schemas/Review"
-          type: array
-        self:
-          type: string
-      required:
-      - items
-      - self
       type: object
     Image:
       example:

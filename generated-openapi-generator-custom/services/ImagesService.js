@@ -67,7 +67,7 @@ const filmsFilmIdImagesImageIdDELETE = (params = {}) => new Promise(
 *
 * filmId Integer 
 * imageId Integer 
-* accept String Requested representation for a single image. (optional)
+* accept String Requested representation for a single image. Unsupported media types receive 406. (optional)
 * returns Image
 * */
 const filmsFilmIdImagesImageIdGET = (params = {}) => new Promise(

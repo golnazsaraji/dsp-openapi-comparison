@@ -12,6 +12,10 @@ function requireAuthentication(request, response, next) {
   return response.status(401).json({ error: 'Authentication required.' });
 }
 
+function runWithRequestIdentity(request, callback) {
+  return FilmManagerService.runAsUser(request.user?.id, callback);
+}
+
 function configureSessionAuthentication(app) {
   passport.use(new LocalStrategy({
     usernameField: 'email',
@@ -64,5 +68,6 @@ function configureSessionAuthentication(app) {
 
 module.exports = {
   configureSessionAuthentication,
+  runWithRequestIdentity,
   securityHandler: (request) => request.isAuthenticated(),
 };

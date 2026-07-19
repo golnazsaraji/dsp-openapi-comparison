@@ -27,10 +27,10 @@ function status(action, expected) {
     const otherOwnerFilm = service.filmsPOST({ title: 'Other owner eligible film', private: false });
     service.currentUserId = 2;
     const assignments = service.reviewsAutoInvitationsPOST();
-    assert(assignments.items.some((review) => review.filmId === created.id));
-    assert(!assignments.items.some((review) => review.filmId === otherOwnerFilm.id));
-    assert(!assignments.items.some((review) => review.filmId === privateFilm.id));
-    assert.strictEqual(service.reviewsAutoInvitationsPOST().items.length, 0);
+    assert(assignments.some((review) => review.filmId === created.id));
+    assert(!assignments.some((review) => review.filmId === otherOwnerFilm.id));
+    assert(!assignments.some((review) => review.filmId === privateFilm.id));
+    assert.strictEqual(service.reviewsAutoInvitationsPOST().length, 0);
 
     const invitationFilm = service.filmsPOST({ title: 'Bulk invitations', private: false });
     const invitations = service.filmsFilmIdReviewsPOST(invitationFilm.id, [{ reviewerId: 3 }, { filmId: invitationFilm.id, reviewerId: 4 }]);
@@ -47,7 +47,7 @@ function status(action, expected) {
     status(() => service.filmsFilmIdPUT(privateFilm.id, { title: 'Forbidden', private: true }), 403);
     status(() => service.filmsFilmIdDELETE(privateFilm.id), 403);
     status(() => service.filmsFilmIdReviewsPOST(invitationFilm.id, [{ reviewerId: 1 }]), 403);
-    status(() => service.filmsFilmIdReviewsCurrentPUT(invitationFilm.id, { completed: true, reviewDate: '2026-07-11', rating: 5, review: 'No invitation' }), 404);
+    status(() => service.filmsFilmIdReviewsCurrentPUT(invitationFilm.id, { completed: true, reviewDate: '2026-07-11', rating: 5, review: 'No invitation' }), 403);
 
     service.currentUserId = 3;
     assert.strictEqual(service.filmsFilmIdReviewsCurrentPUT(invitationFilm.id, {
@@ -68,6 +68,14 @@ function status(action, expected) {
     assert.strictEqual(page.films.length, 1);
     assert(page.next.endsWith('page=2&limit=1'));
     assert(!JSON.stringify(page).includes('/change/me'));
+
+    service.currentUserId = 2;
+    const image = service.filmsFilmIdImagesPOST(created.id, 'service-test.jpg');
+    assert.deepStrictEqual(Object.keys(image).sort(), ['filmId', 'id', 'mediaType', 'name', 'self']);
+    assert.strictEqual(image.filmId, created.id);
+    assert.strictEqual(image.name, 'service-test.jpg');
+    assert.strictEqual(image.mediaType, 'image/jpeg');
+    assert.strictEqual(image.self, `/api/films/${created.id}/images/${image.id}`);
 
     console.log('Lab01 shared-service tests passed.');
 })().catch((error) => {

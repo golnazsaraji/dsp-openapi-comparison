@@ -392,10 +392,7 @@ focused.
                 created.push(this.reviewDto(review));
             });
 
-        return {
-            items: created,
-            self: '/api/films/public/assignments',
-        };
+        return created;
     }
 
     filmsFilmIdGET(filmId) {
@@ -492,7 +489,11 @@ focused.
     filmsFilmIdReviewsCurrentPUT(filmId, body = {}) {
         const userId = this.requireUser();
         const review = this.reviews.find((item) => item.filmId === Number(filmId) && item.reviewerId === userId);
-        if (!review) throw this.error('Review invitation not found.', 404);
+        if (!review) {
+            const filmHasInvitations = this.reviews.some((item) => item.filmId === Number(filmId));
+            if (filmHasInvitations) throw this.error('Only the invited reviewer can complete this review.', 403);
+            throw this.error('Review invitation not found.', 404);
+        }
         if (body.completed !== true || !body.reviewDate || body.rating == null || !body.review) {
             throw this.error('completed, reviewDate, rating, and review are required.', 400);
         }
@@ -548,7 +549,7 @@ focused.
     imageMediaType(fileName = '') {
         const lowerName = String(fileName).toLowerCase();
         if (lowerName.endsWith('.png')) return 'image/png';
-        if (lowerName.endsWith('.jpg')) return 'image/jpg';
+        if (lowerName.endsWith('.jpg')) return 'image/jpeg';
         if (lowerName.endsWith('.jpeg')) return 'image/jpeg';
         if (lowerName.endsWith('.gif')) return 'image/gif';
         return null;

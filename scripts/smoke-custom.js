@@ -42,7 +42,7 @@ function request(method, pathname, body) {
         } catch (error) {
           data = raw;
         }
-        resolve({ status: res.statusCode, data });
+        resolve({ status: res.statusCode, headers: res.headers, data });
       });
     });
 
@@ -85,7 +85,7 @@ function uploadImage(pathname) {
         } catch (error) {
           data = raw;
         }
-        resolve({ status: res.statusCode, data });
+        resolve({ status: res.statusCode, headers: res.headers, data });
       });
     });
 
@@ -224,8 +224,17 @@ async function main() {
 
   await step('upload image to configured runtime storage', async () => {
     const response = await uploadImage(`/api/films/${createdFilm.id}/images`);
-    assertStatus(response, [200, 201], `POST /api/films/${createdFilm.id}/images`);
-    assert(response.data.name, 'uploaded image response should include its stored name');
+    assertStatus(response, 201, `POST /api/films/${createdFilm.id}/images`);
+    assert(
+      /^application\/json(?:;|$)/i.test(response.headers['content-type'] || ''),
+      'upload response Content-Type should be application/json',
+    );
+    assert(response.data && typeof response.data === 'object', 'upload response should be an Image object');
+    ['id', 'filmId', 'name', 'mediaType', 'self'].forEach((field) => {
+      assert(response.data[field] !== undefined, `upload response should include ${field}`);
+    });
+    assert(response.data.filmId === createdFilm.id, 'uploaded image filmId should match the target film');
+    assert(response.data.self === `/api/films/${createdFilm.id}/images/${response.data.id}`, 'uploaded image self link should be correct');
     const uploadDirectory = path.resolve(
       process.env.UPLOAD_DIR || path.join(__dirname, '..', 'runtime-data', 'uploaded_files'),
     );

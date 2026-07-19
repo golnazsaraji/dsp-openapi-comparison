@@ -3,6 +3,7 @@ const path = require('path');
 const camelCase = require('camelcase');
 const config = require('../config');
 const logger = require('../logger');
+const { runWithRequestIdentity } = require('../../adapters/openapi-generator/sessionAuth');
 
 class Controller {
   static sendResponse(response, payload) {
@@ -112,7 +113,12 @@ class Controller {
 
   static async handleRequest(request, response, serviceOperation) {
     try {
-      const serviceResponse = await serviceOperation(this.collectRequestParams(request));
+      // Multipart parsing may cross an async boundary created before the request identity
+      // context. Rebind the authenticated Passport user immediately around service dispatch.
+      const serviceResponse = await runWithRequestIdentity(
+        request,
+        () => serviceOperation(this.collectRequestParams(request)),
+      );
       Controller.sendResponse(response, serviceResponse);
     } catch (error) {
       Controller.sendError(response, error);

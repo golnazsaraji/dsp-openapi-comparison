@@ -185,7 +185,7 @@ const filmsToReviewGET = (params = {}) => new Promise(
 /**
 * Automatically issue review invitations for public films without invitations
 *
-* returns ReviewInvitationBatch
+* returns List
 * */
 const reviewsAutoInvitationsPOST = (params = {}) => new Promise(
   async (resolve, reject) => {

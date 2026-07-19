@@ -288,7 +288,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReviewInvitationBatch'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
         '401':
           $ref: '#/components/responses/Error'
   /api/films/{filmId}:
@@ -658,10 +660,9 @@ components:
       name: accept
       in: header
       required: false
-      description: Requested representation for a single image.
+      description: Requested representation for a single image. Unsupported media types receive 406.
       schema:
         type: string
-        enum: [application/json, image/png, image/jpg, image/jpeg, image/gif]
   responses:
     Error:
       description: Error response
@@ -887,16 +888,6 @@ components:
         reviewerId:
           type: integer
           minimum: 1
-    ReviewInvitationBatch:
-      type: object
-      required: [items, self]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Review'
-        self:
-          type: string
     Image:
       type: object
       required: [id, filmId, name, mediaType, self]
