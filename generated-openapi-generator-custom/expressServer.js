@@ -52,7 +52,10 @@ class ExpressServer {
       OpenApiValidator.middleware({
         apiSpec: this.openApiPath,
         operationHandlers: path.join(__dirname),
-        fileUploader: { dest: config.FILE_UPLOAD_PATH },
+        fileUploader: {
+          dest: config.FILE_UPLOAD_PATH,
+          limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+        },
         validateSecurity: {
           handlers: { cookieAuth: sessionAuth.securityHandler },
         },
@@ -63,8 +66,17 @@ class ExpressServer {
   launch() {
     // eslint-disable-next-line no-unused-vars
     this.app.use((err, req, res, next) => {
+      (req.files || []).forEach((file) => {
+        try {
+          fs.unlinkSync(path.join(config.FILE_UPLOAD_PATH, path.basename(file.filename)));
+        } catch (cleanupError) {
+          if (cleanupError.code !== 'ENOENT') logger.error('Failed to clean rejected upload', cleanupError);
+        }
+      });
       // format errors
-      res.status(err.status || 500).json({
+      const uploadStatus = err.code === 'LIMIT_FILE_SIZE' ? 413
+        : err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE' ? 400 : undefined;
+      res.status(err.status || uploadStatus || 500).json({
         message: err.message || err,
         errors: err.errors || '',
       });

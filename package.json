@@ -13,6 +13,11 @@
     "start:initial": "cd generated-openapi-generator && npm install && npm start",
     "test": "npm run test:lab01 && npm run smoke",
     "test:lab01": "node scripts/lab01-schema-tests.js && node scripts/lab01-service-tests.js",
+    "test:lab02": "node scripts/lab02-phase1-tests.js && node scripts/lab02-converter-client-tests.js",
+    "test:lab02:integration": "node scripts/lab02-grpc-integration-tests.js",
+    "test:lab02:proto": "node scripts/lab02-proto-consistency.js",
+    "converter:build": "cd shared-services/lab02/converter-java && ./mvnw test package",
+    "converter:start": "cd shared-services/lab02/converter-java && ./mvnw exec:java",
     "smoke": "node scripts/smoke-custom.js",
     "test:initial": "node scripts/smoke-initial.js"
   },
@@ -20,6 +25,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "bcrypt": "^6.0.0",

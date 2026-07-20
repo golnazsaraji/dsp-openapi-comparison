@@ -17,6 +17,27 @@ class Controller {
     }
     response.status(payload.code || 200);
     const responsePayload = payload.payload !== undefined ? payload.payload : payload;
+    if (responsePayload?.kind === 'json') {
+      response.status(responsePayload.status || payload.code || 200).json(responsePayload.body);
+      return;
+    }
+    if (responsePayload?.kind === 'no-content') {
+      response.status(responsePayload.status || 204).end();
+      return;
+    }
+    if (responsePayload?.kind === 'file') {
+      response.status(responsePayload.status || payload.code || 200);
+      response.type(responsePayload.mediaType);
+      if (Number.isInteger(responsePayload.length)) response.set('Content-Length', String(responsePayload.length));
+      const stream = fs.createReadStream(responsePayload.filePath);
+      stream.on('error', (error) => {
+        logger.error('Unable to stream stored image representation', error);
+        if (!response.headersSent) response.status(500).json({ error: 'Stored image representation is unavailable.' });
+        else response.destroy();
+      });
+      stream.pipe(response);
+      return;
+    }
     if (responsePayload instanceof Object) {
       response.json(responsePayload);
     } else if (responsePayload !== undefined && responsePayload !== null) {
@@ -32,7 +53,7 @@ class Controller {
     if (error.error instanceof Object) {
       response.json(error.error);
     } else {
-      response.end(error.error || error.message);
+      response.json({ error: error.error || error.message || 'Internal server error.' });
     }
   }
 
@@ -40,27 +61,37 @@ class Controller {
   * Files have been uploaded to the directory defined by config.js as upload directory
   * Files have a temporary name, that was saved as 'filename' of the file object that is
   * referenced in request.files array.
-  * This method finds the file and changes it to the file name that was originally called
-  * when it was uploaded. To prevent files from being overwritten, a timestamp is added between
-  * the filename and its extension
+  * This method passes a safe temporary storage key and client metadata to handwritten logic.
+  * Validation and the final server-generated storage key are owned by the shared image service.
   * @param request
   * @param fieldName
-  * @returns {string}
+  * @returns {object|undefined}
   */
   static collectFile(request, fieldName) {
-    let uploadedFileName = '';
-    if (request.files && request.files.length > 0) {
-      const fileObject = request.files.find((file) => file.fieldname === fieldName);
-      if (fileObject) {
-        const fileArray = fileObject.originalname.split('.');
-        const extension = fileArray.pop();
-        fileArray.push(`_${Date.now()}`);
-        uploadedFileName = `${fileArray.join('')}.${extension}`;
-        fs.renameSync(path.join(config.FILE_UPLOAD_PATH, fileObject.filename),
-          path.join(config.FILE_UPLOAD_PATH, uploadedFileName));
-      }
+    const files = (request.files || []).filter((file) => file.fieldname === fieldName);
+    if (files.length > 1 || (request.files || []).length > 1) {
+      const error = new Error('Exactly one image file is allowed per request.');
+      error.code = 400;
+      throw error;
     }
-    return uploadedFileName;
+    const fileObject = files[0];
+    if (!fileObject) return undefined;
+    return {
+      originalName: fileObject.originalname,
+      storedName: fileObject.filename,
+      mimeType: fileObject.mimetype,
+      size: fileObject.size,
+    };
+  }
+
+  static cleanupRequestFiles(request) {
+    (request.files || []).forEach((file) => {
+      try {
+        fs.unlinkSync(path.join(config.FILE_UPLOAD_PATH, path.basename(file.filename)));
+      } catch (error) {
+        if (error.code !== 'ENOENT') logger.error('Failed to clean rejected upload', error);
+      }
+    });
   }
 
   static getRequestBodyName(request) {
@@ -121,6 +152,7 @@ class Controller {
       );
       Controller.sendResponse(response, serviceResponse);
     } catch (error) {
+      Controller.cleanupRequestFiles(request);
       Controller.sendError(response, error);
     }
   }

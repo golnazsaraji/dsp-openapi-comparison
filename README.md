@@ -62,6 +62,9 @@ Lab02 image-management notes and the gRPC converter contract are stored in:
 specifications/lab02/
 ```
 
+The completed Lab02 architecture, runtime commands, validation suites, and cumulative
+Postman workflow are documented in `docs/lab02-implementation.md`.
+
 Lab03 TCP converter client/server sources and protocol notes are stored in:
 
 ```text

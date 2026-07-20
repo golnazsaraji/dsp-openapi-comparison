@@ -2523,12 +2523,7 @@
           "name": "Upload image to current-run public film",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "multipart/form-data; boundary=Lab01ImageBoundary"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/films/{{createdPublicFilmId}}/images",
               "host": [
@@ -2542,8 +2537,14 @@
               ]
             },
             "body": {
-              "mode": "raw",
-              "raw": "--Lab01ImageBoundary\r\nContent-Disposition: form-data; name=\"image\"; filename=\"lab01-fixture.jpg\"\r\nContent-Type: image/jpeg\r\n\r\nLab01 portable image fixture\r\n--Lab01ImageBoundary--\r\n"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "postman/lab02/fixtures/valid.jpg"
+                }
+              ]
             }
           },
           "response": [],
