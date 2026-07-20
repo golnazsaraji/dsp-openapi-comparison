@@ -11,7 +11,7 @@ const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultS
 *
 * filmId Integer 
 * reviewCompletion ReviewCompletion 
-* returns Review
+* no response value expected for this operation
 * */
 const filmsFilmIdReviewsCurrentPUT = (params = {}) => new Promise(
   async (resolve, reject) => {
@@ -39,8 +39,8 @@ const filmsFilmIdReviewsCurrentPUT = (params = {}) => new Promise(
 * Invite a reviewer to a public owned film
 *
 * filmId Integer 
-* reviewInvitation ReviewInvitation 
-* returns Review
+* reviewInvitation List 
+* returns List
 * */
 const filmsFilmIdReviewsPOST = (params = {}) => new Promise(
   async (resolve, reject) => {
@@ -185,7 +185,7 @@ const filmsToReviewGET = (params = {}) => new Promise(
 /**
 * Automatically issue review invitations for public films without invitations
 *
-* returns ReviewInvitationBatch
+* returns List
 * */
 const reviewsAutoInvitationsPOST = (params = {}) => new Promise(
   async (resolve, reject) => {

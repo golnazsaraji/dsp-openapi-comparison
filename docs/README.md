@@ -9,5 +9,6 @@ This directory contains the written analysis for the project.
 - `03-openapi-generator-options-analysis.md`: documents OpenAPI Generator configuration options and the final template customization strategy.
 - `04-service-url-reference.md`: lists the Film Manager service URLs and smoke-test commands.
 - `05-success-codes-and-upload-storage.md`: explains the final success-code and persistent upload-storage changes in non-technical language.
+- `06-lab01-synchronization.md`: maps the Lab01 requirements to the final contract, shared implementation, authentication, and tests.
 
 These files explain the reasoning behind the final project structure and support the experimental conclusions.

@@ -1,4 +1,6 @@
 const FilmManagerService = require('../../shared-services/src/services/FilmManagerService');
+const fs = require('fs');
+const path = require('path');
 
 // Success status codes per operationId. Regeneration-safe home for a value that used to be
 // hard-coded inside out/service.mustache: editing openapi.yaml's response code alone did not
@@ -23,12 +25,13 @@ const FilmManagerService = require('../../shared-services/src/services/FilmManag
 // generated output directory, but it must still be updated manually whenever
 // an API operation with a non-200 success response is added or changed.
 const successStatusByOperation = {
-    sessionsPOST: 201,
+    filmsFilmIdPUT: 204,
     sessionsCurrentDELETE: 204,
     filmsPOST: 201,
     reviewsAutoInvitationsPOST: 201,
     filmsFilmIdDELETE: 204,
     filmsFilmIdReviewsPOST: 201,
+    filmsFilmIdReviewsCurrentPUT: 204,
     filmsFilmIdReviewsReviewerIdDELETE: 204,
     usersCurrentActiveFilmDELETE: 204,
     filmsFilmIdImagesPOST: 201,
@@ -43,10 +46,23 @@ function successStatus(operationId) {
 // Centralizes the login-cookie decision here instead of a hard-coded operationId string
 // check inside the generated (and regenerated) Controller.js.
 function responseCookie(operationId) {
-    if (operationId === 'sessionsPOST') {
-        return { name: 'connect-sid', value: 'generated-session', options: { httpOnly: true, sameSite: 'lax' } };
-    }
     return undefined;
+}
+
+const uploadDirectory = path.resolve(
+    process.env.UPLOAD_DIR || path.join(__dirname, '..', '..', 'runtime-data', 'uploaded_files'),
+);
+
+function removeStoredImages(images) {
+    images.forEach((image) => {
+        if (!image?.name) return;
+        const storedPath = path.join(uploadDirectory, path.basename(image.name));
+        try {
+            fs.unlinkSync(storedPath);
+        } catch (error) {
+            if (error.code !== 'ENOENT') throw error;
+        }
+    });
 }
 
 module.exports = new Proxy({ successStatus, responseCookie }, {
@@ -61,7 +77,14 @@ module.exports = new Proxy({ successStatus, responseCookie }, {
                 throw error;
             }
 
-            return operation.apply(FilmManagerService, args);
+            const deletedImages = operationId === 'filmsFilmIdDELETE'
+                ? FilmManagerService.images.filter((image) => image.filmId === Number(args[0]))
+                : operationId === 'filmsFilmIdImagesImageIdDELETE'
+                    ? FilmManagerService.images.filter((image) => image.filmId === Number(args[0]) && image.id === Number(args[1]))
+                    : [];
+            const result = await operation.apply(FilmManagerService, args);
+            removeStoredImages(deletedImages);
+            return result;
         };
     },
 });

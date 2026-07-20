@@ -13,6 +13,18 @@ tags:
 - name: images
 - name: realtime
 paths:
+  /api:
+    get:
+      operationId: apiGET
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FilmManager"
+          description: Links to the main resources
+      summary: Discover the Film Manager API
+      x-eov-operation-handler: controllers/DefaultController
   /health:
     get:
       operationId: healthGET
@@ -32,7 +44,7 @@ paths:
         required: true
         x-codegen-request-body-name: loginRequest
       responses:
-        "201":
+        "200":
           content:
             application/json:
               schema:
@@ -66,6 +78,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
           description: Error response
+      security:
+      - cookieAuth: []
       summary: Logout
       tags:
       - sessions
@@ -85,7 +99,70 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
           description: Error response
+      security:
+      - cookieAuth: []
       summary: Get current authenticated user
+      tags:
+      - sessions
+      x-eov-operation-handler: controllers/SessionsController
+  /api/users:
+    get:
+      operationId: usersGET
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/User"
+                type: array
+          description: Users without authentication data
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: List users that may be invited to review films
+      tags:
+      - sessions
+      x-eov-operation-handler: controllers/SessionsController
+  /api/users/{userId}:
+    get:
+      operationId: usersUserIdGET
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          minimum: 1
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: User without authentication data
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+      security:
+      - cookieAuth: []
+      summary: Get one user
       tags:
       - sessions
       x-eov-operation-handler: controllers/SessionsController
@@ -316,7 +393,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FilmPage"
-          description: Paginated owned films
+          description: Paginated private films owned by the current user
         "400":
           content:
             application/json:
@@ -331,7 +408,9 @@ paths:
           description: Error response
       security:
       - cookieAuth: []
-      summary: List films owned by the current user
+      description: Returns the authenticated user's private films as a paginated collection.
+        Public films remain available through `/api/films/public`.
+      summary: List private films owned by the current user
       tags:
       - films
       x-eov-operation-handler: controllers/FilmsController
@@ -420,7 +499,7 @@ paths:
       - films
       - reviews
       x-eov-operation-handler: controllers/FilmsController
-  /api/reviews/auto-invitations:
+  /api/films/public/assignments:
     post:
       operationId: reviewsAutoInvitationsPOST
       responses:
@@ -428,15 +507,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ReviewInvitationBatch"
+                items:
+                  $ref: "#/components/schemas/Review"
+                type: array
           description: Created review invitations
         "401":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-          description: Error response
-        "409":
           content:
             application/json:
               schema:
@@ -525,7 +600,9 @@ paths:
           description: Error response
       security:
       - cookieAuth: []
-      summary: Get an accessible film
+      description: Returns one private film only when the authenticated user owns it.
+        This is the single-resource counterpart to `GET /api/films`.
+      summary: Get one private film owned by the current user
       tags:
       - films
       x-eov-operation-handler: controllers/FilmsController
@@ -548,12 +625,8 @@ paths:
         required: true
         x-codegen-request-body-name: filmInput
       responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Film"
-          description: Updated film
+        "204":
+          description: Updated
         "400":
           content:
             application/json:
@@ -606,7 +679,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ReviewInvitation"
+              items:
+                $ref: "#/components/schemas/ReviewInvitation"
+              minItems: 1
+              type: array
         required: true
         x-codegen-request-body-name: reviewInvitation
       responses:
@@ -614,7 +690,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Review"
+                items:
+                  $ref: "#/components/schemas/Review"
+                type: array
           description: Review invitation
         "400":
           content:
@@ -725,12 +803,8 @@ paths:
         required: true
         x-codegen-request-body-name: reviewCompletion
       responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Review"
-          description: Completed review
+        "204":
+          description: Review completed
         "400":
           content:
             application/json:
@@ -1001,18 +1075,13 @@ paths:
           minimum: 1
           type: integer
         style: simple
-      - description: Requested representation for a single image.
+      - description: Requested representation for a single image. Unsupported media
+          types receive 406.
         explode: false
         in: header
         name: accept
         required: false
         schema:
-          enum:
-          - application/json
-          - image/png
-          - image/jpg
-          - image/jpeg
-          - image/gif
           type: string
         style: simple
       responses:
@@ -1088,6 +1157,15 @@ components:
         minimum: 1
         type: integer
       style: simple
+    UserId:
+      explode: false
+      in: path
+      name: userId
+      required: true
+      schema:
+        minimum: 1
+        type: integer
+      style: simple
     ImageId:
       explode: false
       in: path
@@ -1121,18 +1199,13 @@ components:
         type: integer
       style: form
     AcceptImage:
-      description: Requested representation for a single image.
+      description: Requested representation for a single image. Unsupported media
+        types receive 406.
       explode: false
       in: header
       name: accept
       required: false
       schema:
-        enum:
-        - application/json
-        - image/png
-        - image/jpg
-        - image/jpeg
-        - image/gif
         type: string
       style: simple
   responses:
@@ -1152,69 +1225,47 @@ components:
       required:
       - error
       type: object
-    Pagination:
+    FilmPage:
       example:
+        next: next
+        films:
+        - owner: 5
+          private: true
+          watchDate: 2000-01-23
+          reviews: reviews
+          rating: 2
+          self: self
+          id: 5
+          title: title
+          favorite: false
+        - owner: 5
+          private: true
+          watchDate: 2000-01-23
+          reviews: reviews
+          rating: 2
+          self: self
+          id: 5
+          title: title
+          favorite: false
         totalItems: 0
-        limit: 1
+        prev: prev
         totalPages: 0
-        page: 1
+        self: self
+        currentPage: 1
       properties:
-        page:
-          minimum: 1
+        totalPages:
+          minimum: 0
           type: integer
-        limit:
+        currentPage:
           minimum: 1
           type: integer
         totalItems:
           minimum: 0
           type: integer
-        totalPages:
-          minimum: 0
-          type: integer
-      required:
-      - limit
-      - page
-      - totalItems
-      - totalPages
-      type: object
-    FilmPage:
-      example:
-        next: next
-        pagination:
-          totalItems: 0
-          limit: 1
-          totalPages: 0
-          page: 1
-        prev: prev
-        self: self
-        items:
-        - owner: 6
-          private: true
-          watchDate: 2000-01-23
-          public: true
-          rating: 5
-          self: self
-          id: 0
-          title: title
-          ownerId: 1
-          favorite: true
-        - owner: 6
-          private: true
-          watchDate: 2000-01-23
-          public: true
-          rating: 5
-          self: self
-          id: 0
-          title: title
-          ownerId: 1
-          favorite: true
-      properties:
-        items:
+        films:
           items:
             $ref: "#/components/schemas/Film"
           type: array
-        pagination:
-          $ref: "#/components/schemas/Pagination"
         self:
           type: string
         next:
@@ -1224,56 +1275,61 @@ components:
           nullable: true
           type: string
       required:
-      - items
-      - pagination
+      - currentPage
+      - films
       - self
+      - totalItems
+      - totalPages
       type: object
     ReviewPage:
       example:
         next: next
-        pagination:
-          totalItems: 0
-          limit: 1
-          totalPages: 0
-          page: 1
+        totalItems: 0
+        reviews:
+        - reviewerId: 5
+          reviewDate: 2000-01-23
+          review: review
+          filmId: 5
+          rating: 2
+          active: true
+          self: self
+          completed: true
+          reviewer:
+            name: name
+            self: self
+            id: 0
+            email: email
+        - reviewerId: 5
+          reviewDate: 2000-01-23
+          review: review
+          filmId: 5
+          rating: 2
+          active: true
+          self: self
+          completed: true
+          reviewer:
+            name: name
+            self: self
+            id: 0
+            email: email
         prev: prev
+        totalPages: 0
         self: self
-        items:
-        - reviewerId: 6
-          reviewDate: 2000-01-23
-          review: review
-          filmId: 0
-          rating: 1
-          description: description
-          active: true
-          self: self
-          completed: true
-          reviewer:
-            name: name
-            self: self
-            id: 0
-            email: email
-        - reviewerId: 6
-          reviewDate: 2000-01-23
-          review: review
-          filmId: 0
-          rating: 1
-          description: description
-          active: true
-          self: self
-          completed: true
-          reviewer:
-            name: name
-            self: self
-            id: 0
-            email: email
+        currentPage: 1
       properties:
-        items:
+        totalPages:
+          minimum: 0
+          type: integer
+        currentPage:
+          minimum: 1
+          type: integer
+        totalItems:
+          minimum: 0
+          type: integer
+        reviews:
           items:
             $ref: "#/components/schemas/Review"
           type: array
-        pagination:
-          $ref: "#/components/schemas/Pagination"
         self:
           type: string
         next:
@@ -1283,9 +1339,11 @@ components:
           nullable: true
           type: string
       required:
-      - items
-      - pagination
+      - currentPage
+      - reviews
       - self
+      - totalItems
+      - totalPages
       type: object
     LoginRequest:
       example:
@@ -1326,18 +1384,53 @@ components:
       - name
       - self
       type: object
-    Film:
+    FilmManager:
       example:
-        owner: 6
+        ownedFilms: ownedFilms
+        session: session
+        self: self
+        publicFilms: publicFilms
+        reviewAssignments: reviewAssignments
+        users: users
+        invitedFilms: invitedFilms
+      properties:
+        self:
+          type: string
+        publicFilms:
+          type: string
+        ownedFilms:
+          type: string
+        invitedFilms:
+          type: string
+        reviewAssignments:
+          type: string
+        users:
+          type: string
+        session:
+          type: string
+      required:
+      - invitedFilms
+      - ownedFilms
+      - publicFilms
+      - reviewAssignments
+      - self
+      - session
+      - users
+      type: object
+    Film:
+      anyOf:
+      - $ref: "#/components/schemas/Film_anyOf"
+      - $ref: "#/components/schemas/Film_anyOf_1"
+      example:
+        owner: 5
         private: true
         watchDate: 2000-01-23
-        public: true
-        rating: 5
+        reviews: reviews
+        rating: 2
         self: self
-        id: 0
+        id: 5
         title: title
-        ownerId: 1
-        favorite: true
+        favorite: false
       properties:
         id:
           type: integer
@@ -1346,16 +1439,8 @@ components:
         owner:
           description: Identifier of the user who created the film.
           type: integer
-        ownerId:
-          deprecated: true
-          description: Compatibility alias for owner.
-          type: integer
         private:
           description: True when only the owner can access the film.
-          type: boolean
-        public:
-          deprecated: true
-          description: Compatibility alias equal to the inverse of private.
           type: boolean
         watchDate:
           format: date
@@ -1367,11 +1452,13 @@ components:
           nullable: true
           type: integer
         favorite:
+          default: false
           type: boolean
         self:
           type: string
+        reviews:
+          type: string
       required:
-      - favorite
       - id
       - owner
       - private
@@ -1379,45 +1466,19 @@ components:
       - title
       type: object
     FilmInput:
-      example:
-        private: true
-        watchDate: 2000-01-23
-        public: true
-        rating: 0
-        title: title
-        favorite: true
-      properties:
-        title:
-          type: string
-        private:
-          type: boolean
-        public:
-          deprecated: true
-          description: Compatibility alias equal to the inverse of private.
-          type: boolean
-        watchDate:
-          format: date
-          nullable: true
-          type: string
-        rating:
-          maximum: 10
-          minimum: 0
-          nullable: true
-          type: integer
-        favorite:
-          type: boolean
-      required:
-      - private
-      - title
-      type: object
+      anyOf:
+      - $ref: "#/components/schemas/FilmInput_anyOf"
+      - $ref: "#/components/schemas/FilmInput_anyOf_1"
     Review:
+      anyOf:
+      - $ref: "#/components/schemas/Review_anyOf"
+      - $ref: "#/components/schemas/Review_anyOf_1"
       example:
-        reviewerId: 6
+        reviewerId: 5
         reviewDate: 2000-01-23
         review: review
-        filmId: 0
-        rating: 1
-        description: description
+        filmId: 5
+        rating: 2
         active: true
         self: self
         completed: true
@@ -1446,12 +1507,6 @@ components:
           maxLength: 1000
           nullable: true
           type: string
-        description:
-          deprecated: true
-          description: Compatibility alias for review.
-          maxLength: 1000
-          nullable: true
-          type: string
         active:
           type: boolean
         reviewer:
@@ -1459,19 +1514,21 @@ components:
         self:
           type: string
       required:
-      - active
       - completed
       - filmId
       - reviewerId
       - self
       type: object
     ReviewCompletion:
+      additionalProperties: false
       example:
         reviewDate: 2000-01-23
         review: review
         rating: 0
-        description: description
+        completed: true
       properties:
+        completed:
+          type: boolean
         reviewDate:
           format: date
           type: string
@@ -1482,64 +1539,25 @@ components:
         review:
           maxLength: 1000
           type: string
-        description:
-          deprecated: true
-          description: Compatibility alias for review.
-          maxLength: 1000
-          type: string
+      required:
+      - completed
+      - rating
+      - review
+      - reviewDate
       type: object
     ReviewInvitation:
       example:
         reviewerId: 1
+        filmId: 1
       properties:
+        filmId:
+          minimum: 1
+          type: integer
         reviewerId:
           minimum: 1
           type: integer
       required:
       - reviewerId
-      type: object
-    ReviewInvitationBatch:
-      example:
-        self: self
-        items:
-        - reviewerId: 6
-          reviewDate: 2000-01-23
-          review: review
-          filmId: 0
-          rating: 1
-          description: description
-          active: true
-          self: self
-          completed: true
-          reviewer:
-            name: name
-            self: self
-            id: 0
-            email: email
-        - reviewerId: 6
-          reviewDate: 2000-01-23
-          review: review
-          filmId: 0
-          rating: 1
-          description: description
-          active: true
-          self: self
-          completed: true
-          reviewer:
-            name: name
-            self: self
-            id: 0
-            email: email
-      properties:
-        items:
-          items:
-            $ref: "#/components/schemas/Review"
-          type: array
-        self:
-          type: string
-      required:
-      - items
-      - self
       type: object
     Image:
       example:
@@ -1639,8 +1657,85 @@ components:
       required:
       - image
       type: object
+    Film_anyOf_not:
+      anyOf:
+      - required:
+        - watchDate
+      - required:
+        - rating
+      - required:
+        - favorite
+    Film_anyOf:
+      not:
+        $ref: "#/components/schemas/Film_anyOf_not"
+      properties:
+        private:
+          type: boolean
+    Film_anyOf_1:
+      properties:
+        private:
+          type: boolean
+    FilmInput_anyOf:
+      additionalProperties: false
+      example:
+        private: true
+        title: title
+      properties:
+        title:
+          type: string
+        private:
+          type: boolean
+      required:
+      - private
+      - title
+      type: object
+    FilmInput_anyOf_1:
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+        private:
+          type: boolean
+        watchDate:
+          format: date
+          nullable: true
+          type: string
+        rating:
+          maximum: 10
+          minimum: 0
+          nullable: true
+          type: integer
+        favorite:
+          default: false
+          type: boolean
+      required:
+      - private
+      - title
+      type: object
+    Review_anyOf_not:
+      anyOf:
+      - required:
+        - reviewDate
+      - required:
+        - rating
+      - required:
+        - review
+    Review_anyOf:
+      not:
+        $ref: "#/components/schemas/Review_anyOf_not"
+      properties:
+        completed:
+          type: boolean
+    Review_anyOf_1:
+      properties:
+        completed:
+          type: boolean
+      required:
+      - rating
+      - review
+      - reviewDate
   securitySchemes:
     cookieAuth:
       in: cookie
-      name: connect-sid
+      name: connect.sid
       type: apiKey

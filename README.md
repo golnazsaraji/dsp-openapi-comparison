@@ -54,6 +54,8 @@ Lab01 Draft 7 JSON Schemas and valid JSON examples are stored in:
 specifications/lab01/
 ```
 
+The final Lab01 mapping, authentication design, intentional in-memory storage decision, and verification commands are documented in `docs/06-lab01-synchronization.md`.
+
 Lab02 image-management notes and the gRPC converter contract are stored in:
 
 ```text
@@ -236,5 +238,6 @@ The main written analysis is in:
 - `docs/03-openapi-generator-options-analysis.md`
 - `docs/04-service-url-reference.md`
 - `docs/05-success-codes-and-upload-storage.md`
+- `docs/06-lab01-synchronization.md`
 
 These documents explain the generator comparison, the regeneration-safe adapter approach, and the final custom-template workflow.

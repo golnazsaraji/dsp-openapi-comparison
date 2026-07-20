@@ -7,6 +7,31 @@ const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultS
 // generated/regenerated file) instead of being hard-coded per operationId in this template.
 
 /**
+* Discover the Film Manager API
+*
+* returns FilmManager
+* */
+const apiGET = (params = {}) => new Promise(
+  async (resolve, reject) => {
+    try {
+      const result = await DefaultServiceAdapter.apiGET(
+      );
+
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('apiGET'),
+        DefaultServiceAdapter.responseCookie('apiGET'),
+      ));
+} catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
+      reject(Service.rejectResponse(
+        e.message || 'Invalid input',
+        e.status || 500,
+      ));
+    }
+  },
+);
+/**
 * Health check
 *
 * no response value expected for this operation
@@ -33,5 +58,6 @@ const healthGET = (params = {}) => new Promise(
 );
 
 module.exports = {
+  apiGET,
   healthGET,
 };

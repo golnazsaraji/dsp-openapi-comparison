@@ -83,9 +83,63 @@ const sessionsPOST = (params = {}) => new Promise(
     }
   },
 );
+/**
+* List users that may be invited to review films
+*
+* returns List
+* */
+const usersGET = (params = {}) => new Promise(
+  async (resolve, reject) => {
+    try {
+      const result = await DefaultServiceAdapter.usersGET(
+      );
+
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('usersGET'),
+        DefaultServiceAdapter.responseCookie('usersGET'),
+      ));
+} catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
+      reject(Service.rejectResponse(
+        e.message || 'Invalid input',
+        e.status || 500,
+      ));
+    }
+  },
+);
+/**
+* Get one user
+*
+* userId Integer 
+* returns User
+* */
+const usersUserIdGET = (params = {}) => new Promise(
+  async (resolve, reject) => {
+    try {
+      const result = await DefaultServiceAdapter.usersUserIdGET(
+          params.userId,
+      );
+
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('usersUserIdGET'),
+        DefaultServiceAdapter.responseCookie('usersUserIdGET'),
+      ));
+} catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
+      reject(Service.rejectResponse(
+        e.message || 'Invalid input',
+        e.status || 500,
+      ));
+    }
+  },
+);
 
 module.exports = {
   sessionsCurrentDELETE,
   sessionsCurrentGET,
   sessionsPOST,
+  usersGET,
+  usersUserIdGET,
 };
