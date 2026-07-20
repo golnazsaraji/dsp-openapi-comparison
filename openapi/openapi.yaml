@@ -489,7 +489,8 @@ paths:
       tags: [images]
       security:
         - cookieAuth: []
-      summary: List images for a public owned/review film
+      summary: List image metadata for a public film
+      description: Returns all image metadata without pagination or file bytes. Available only to the film owner or an assigned reviewer.
       operationId: filmsFilmIdImagesGET
       parameters:
         - $ref: '#/components/parameters/FilmId'
@@ -513,6 +514,7 @@ paths:
       security:
         - cookieAuth: []
       summary: Upload an image for a public owned film
+      description: The authenticated film owner may upload one valid PNG, JPEG/JPG, or GIF file of at most 5 MiB. Filename extension, multipart media type, and file bytes must agree.
       operationId: filmsFilmIdImagesPOST
       parameters:
         - $ref: '#/components/parameters/FilmId'
@@ -527,6 +529,9 @@ paths:
                 image:
                   type: string
                   format: binary
+            encoding:
+              image:
+                contentType: image/png, image/jpeg, image/jpg, image/gif
       responses:
         '201':
           description: Created image metadata
@@ -542,6 +547,8 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
         '415':
           $ref: '#/components/responses/Error'
   /api/films/{filmId}/images/{imageId}:
@@ -550,6 +557,12 @@ paths:
       security:
         - cookieAuth: []
       summary: Get image metadata or bytes using content negotiation
+      description: >-
+        Returns metadata or an existing source image representation. Access is limited to the
+        public film's owner or a reviewer assigned to that exact film. image/jpg is accepted as
+        a request alias for image/jpeg; JPEG responses use the canonical image/jpeg type.
+        A supported representation which is not locally stored may be created by the configured
+        Converter and cached for later requests. Unsupported Accept media ranges return 406.
       operationId: filmsFilmIdImagesImageIdGET
       parameters:
         - $ref: '#/components/parameters/FilmId'
@@ -566,10 +579,6 @@ paths:
               schema:
                 type: string
                 format: binary
-            image/jpg:
-              schema:
-                type: string
-                format: binary
             image/jpeg:
               schema:
                 type: string
@@ -578,6 +587,8 @@ paths:
               schema:
                 type: string
                 format: binary
+        '400':
+          $ref: '#/components/responses/Error'
         '401':
           $ref: '#/components/responses/Error'
         '403':
@@ -586,11 +597,22 @@ paths:
           $ref: '#/components/responses/Error'
         '406':
           $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '504':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
     delete:
       tags: [images]
       security:
         - cookieAuth: []
       summary: Delete an image from a public owned film
+      description: Only the authenticated film owner may delete an image. Metadata and all registered physical representations are removed.
       operationId: filmsFilmIdImagesImageIdDELETE
       parameters:
         - $ref: '#/components/parameters/FilmId'
@@ -662,7 +684,14 @@ components:
       name: accept
       in: header
       required: false
-      description: Requested representation for a single image. Unsupported media types receive 406.
+      description: >-
+        Standard Accept negotiation for application/json, image/png, image/jpeg (image/jpg alias),
+        and image/gif. Missing Accept and */* default deterministically to application/json.
+        Comma-separated ranges, quality values, and optional parameters are supported. q=0 excludes
+        a representation; highest quality then highest specificity wins, followed by the stable
+        preference application/json, image/png, image/jpeg, image/gif. Unsupported or currently
+        Unsupported representations receive 406. A supported missing representation may trigger
+        conversion and persistent caching.
       schema:
         type: string
   responses:

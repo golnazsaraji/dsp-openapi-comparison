@@ -61,7 +61,8 @@ const filmsFilmIdDELETE = (params = {}) => new Promise(
   },
 );
 /**
-* Get a private film owned by the current user
+* Get one private film owned by the current user
+* Returns one private film only when the authenticated user owns it. This is the single-resource counterpart to `GET /api/films`.
 *
 * filmId Integer 
 * returns Film
@@ -117,7 +118,8 @@ const filmsFilmIdPUT = (params = {}) => new Promise(
   },
 );
 /**
-* List films owned by the current user
+* List private films owned by the current user
+* Returns the authenticated user's private films as a paginated collection. Public films remain available through `/api/films/public`.
 *
 * page Integer One-based page number. (optional)
 * limit Integer Maximum number of resources returned in one page. (optional)

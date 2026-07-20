@@ -240,7 +240,13 @@ async function main() {
     const uploadDirectory = path.resolve(
       process.env.UPLOAD_DIR || path.join(__dirname, '..', 'runtime-data', 'uploaded_files'),
     );
-    uploadedFile = path.join(uploadDirectory, response.data.name);
+    const metadataPath = path.resolve(
+      process.env.IMAGE_METADATA_PATH || path.join(__dirname, '..', 'runtime-data', 'image-metadata.json'),
+    );
+    const persistedMetadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+    const persistedImage = persistedMetadata.images.find((image) => image.id === response.data.id && image.filmId === createdFilm.id);
+    assert(persistedImage, 'uploaded image metadata should be persisted');
+    uploadedFile = path.join(uploadDirectory, persistedImage.storageKey);
     assert(
       fs.existsSync(uploadedFile),
       `uploaded image should exist in ${uploadDirectory}`,

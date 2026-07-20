@@ -364,6 +364,8 @@ paths:
       x-eov-operation-handler: controllers/PublicFilmsController
   /api/films:
     get:
+      description: Returns the authenticated user's private films as a paginated collection.
+        Public films remain available through `/api/films/public`.
       operationId: filmsGET
       parameters:
       - description: One-based page number.
@@ -408,8 +410,6 @@ paths:
           description: Error response
       security:
       - cookieAuth: []
-      description: Returns the authenticated user's private films as a paginated collection.
-        Public films remain available through `/api/films/public`.
       summary: List private films owned by the current user
       tags:
       - films
@@ -563,6 +563,8 @@ paths:
       - films
       x-eov-operation-handler: controllers/FilmsController
     get:
+      description: Returns one private film only when the authenticated user owns
+        it. This is the single-resource counterpart to `GET /api/films`.
       operationId: filmsFilmIdGET
       parameters:
       - explode: false
@@ -600,8 +602,6 @@ paths:
           description: Error response
       security:
       - cookieAuth: []
-      description: Returns one private film only when the authenticated user owns it.
-        This is the single-resource counterpart to `GET /api/films`.
       summary: Get one private film owned by the current user
       tags:
       - films
@@ -906,6 +906,8 @@ paths:
       x-eov-operation-handler: controllers/FilmsController
   /api/films/{filmId}/images:
     get:
+      description: Returns all image metadata without pagination or file bytes. Available
+        only to the film owner or an assigned reviewer.
       operationId: filmsFilmIdImagesGET
       parameters:
       - explode: false
@@ -945,11 +947,14 @@ paths:
           description: Error response
       security:
       - cookieAuth: []
-      summary: List images for a public owned/review film
+      summary: List image metadata for a public film
       tags:
       - images
       x-eov-operation-handler: controllers/ImagesController
     post:
+      description: "The authenticated film owner may upload one valid PNG, JPEG/JPG,\
+        \ or GIF file of at most 5 MiB. Filename extension, multipart media type,\
+        \ and file bytes must agree."
       operationId: filmsFilmIdImagesPOST
       parameters:
       - explode: false
@@ -963,6 +968,10 @@ paths:
       requestBody:
         content:
           multipart/form-data:
+            encoding:
+              image:
+                contentType: "image/png, image/jpeg, image/jpg, image/gif"
+                style: form
             schema:
               $ref: "#/components/schemas/filmsFilmIdImagesPOST_request"
         required: true
@@ -997,6 +1006,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
           description: Error response
+        "413":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "415":
           content:
             application/json:
@@ -1011,6 +1026,8 @@ paths:
       x-eov-operation-handler: controllers/ImagesController
   /api/films/{filmId}/images/{imageId}:
     delete:
+      description: Only the authenticated film owner may delete an image. Metadata
+        and all registered physical representations are removed.
       operationId: filmsFilmIdImagesImageIdDELETE
       parameters:
       - explode: false
@@ -1057,6 +1074,12 @@ paths:
       - images
       x-eov-operation-handler: controllers/ImagesController
     get:
+      description: Returns metadata or an existing source image representation. Access
+        is limited to the public film's owner or a reviewer assigned to that exact
+        film. image/jpg is accepted as a request alias for image/jpeg; JPEG responses
+        use the canonical image/jpeg type. A supported representation which is not
+        locally stored may be created by the configured Converter and cached for later
+        requests. Unsupported Accept media ranges return 406.
       operationId: filmsFilmIdImagesImageIdGET
       parameters:
       - explode: false
@@ -1075,8 +1098,14 @@ paths:
           minimum: 1
           type: integer
         style: simple
-      - description: Requested representation for a single image. Unsupported media
-          types receive 406.
+      - description: "Standard Accept negotiation for application/json, image/png,\
+          \ image/jpeg (image/jpg alias), and image/gif. Missing Accept and */* default\
+          \ deterministically to application/json. Comma-separated ranges, quality\
+          \ values, and optional parameters are supported. q=0 excludes a representation;\
+          \ highest quality then highest specificity wins, followed by the stable\
+          \ preference application/json, image/png, image/jpeg, image/gif. Unsupported\
+          \ or currently Unsupported representations receive 406. A supported missing\
+          \ representation may trigger conversion and persistent caching."
         explode: false
         in: header
         name: accept
@@ -1094,10 +1123,6 @@ paths:
               schema:
                 format: binary
                 type: string
-            image/jpg:
-              schema:
-                format: binary
-                type: string
             image/jpeg:
               schema:
                 format: binary
@@ -1107,6 +1132,12 @@ paths:
                 format: binary
                 type: string
           description: Image metadata or image bytes
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
         "401":
           content:
             application/json:
@@ -1126,6 +1157,36 @@ paths:
                 $ref: "#/components/schemas/Error"
           description: Error response
         "406":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "502":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "504":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error response
+        "500":
           content:
             application/json:
               schema:
@@ -1199,8 +1260,14 @@ components:
         type: integer
       style: form
     AcceptImage:
-      description: Requested representation for a single image. Unsupported media
-        types receive 406.
+      description: "Standard Accept negotiation for application/json, image/png, image/jpeg\
+        \ (image/jpg alias), and image/gif. Missing Accept and */* default deterministically\
+        \ to application/json. Comma-separated ranges, quality values, and optional\
+        \ parameters are supported. q=0 excludes a representation; highest quality\
+        \ then highest specificity wins, followed by the stable preference application/json,\
+        \ image/png, image/jpeg, image/gif. Unsupported or currently Unsupported representations\
+        \ receive 406. A supported missing representation may trigger conversion and\
+        \ persistent caching."
       explode: false
       in: header
       name: accept

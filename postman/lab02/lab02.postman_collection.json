@@ -1,0 +1,362 @@
+{
+  "info": {
+    "_postman_id": "7eb71be1-3dc5-4fc7-b082-lab02phase1",
+    "name": "DSP Film Manager — Lab02",
+    "description": "Cumulative upload, metadata, source negotiation, gRPC conversion/cache, authorization, and cleanup checks.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "filmId", "value": "" },
+    { "key": "imageId", "value": "" },
+    { "key": "pngImageId", "value": "" },
+    { "key": "jpegImageId", "value": "" },
+    { "key": "gifImageId", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const firstRequest = 'Clear stale Runner session';",
+          "if (pm.info.requestName === firstRequest) {",
+          "  pm.collectionVariables.unset('filmId');",
+          "  pm.collectionVariables.unset('imageId');",
+          "  pm.collectionVariables.unset('pngImageId');",
+          "  pm.collectionVariables.unset('jpegImageId');",
+          "  pm.collectionVariables.unset('gifImageId');",
+          "  pm.collectionVariables.unset('uploadSucceeded');",
+          "  pm.collectionVariables.set('runnerRunId', String(Date.now()));",
+          "  console.log('Lab02 Runner state initialized once:', pm.collectionVariables.get('runnerRunId'));",
+          "}",
+          "const filmDependentRequests = ['Upload valid image as owner','Upload valid JPEG as owner','Upload valid GIF as owner','List metadata as owner','Read JSON metadata as owner','Read PNG source as owner','Read JPEG source as owner','Read JPEG source through image/jpg alias','Read GIF source as owner','Convert PNG source to JPEG','Read cached JPEG conversion','Convert JPEG source to GIF','Read cached GIF conversion','Reject unsupported representation','Invite reviewer Frank','Assigned reviewer lists metadata','Reviewer reads converted JPEG','Reviewer cannot delete','Unrelated user cannot list','Unrelated user cannot read converted JPEG','Owner deletes image','Owner deletes JPEG image','Owner deletes GIF image','Owner deletes film'];",
+          "const imageVariableByRequest = { 'List metadata as owner':'pngImageId', 'Read JSON metadata as owner':'pngImageId', 'Read PNG source as owner':'pngImageId', 'Read JPEG source as owner':'jpegImageId', 'Read JPEG source through image/jpg alias':'jpegImageId', 'Read GIF source as owner':'gifImageId', 'Convert PNG source to JPEG':'pngImageId', 'Read cached JPEG conversion':'pngImageId', 'Convert JPEG source to GIF':'jpegImageId', 'Read cached GIF conversion':'jpegImageId', 'Reject unsupported representation':'pngImageId', 'Assigned reviewer lists metadata':'pngImageId', 'Reviewer reads converted JPEG':'pngImageId', 'Reviewer cannot delete':'pngImageId', 'Unrelated user cannot read converted JPEG':'pngImageId', 'Owner deletes image':'pngImageId', 'Owner deletes JPEG image':'jpegImageId', 'Owner deletes GIF image':'gifImageId' };",
+          "const normalizePositiveId = value => { const normalized = String(value ?? '').trim(); return /^\\d+$/.test(normalized) && Number(normalized) > 0 ? normalized : ''; };",
+          "if (filmDependentRequests.includes(pm.info.requestName)) {",
+          "  const normalizedFilmId = normalizePositiveId(pm.collectionVariables.get('filmId'));",
+          "  if (!normalizedFilmId) { console.warn('REQUEST SKIPPED:', pm.info.requestName, 'requires a valid filmId; the originating failure was already reported.'); pm.execution.skipRequest(); } else { pm.collectionVariables.set('filmId', normalizedFilmId); }",
+          "}",
+          "if (imageVariableByRequest[pm.info.requestName]) {",
+          "  const variableName = imageVariableByRequest[pm.info.requestName];",
+          "  const normalizedImageId = normalizePositiveId(pm.collectionVariables.get(variableName));",
+          "  if (!normalizedImageId) { console.warn('REQUEST SKIPPED:', pm.info.requestName, 'requires', variableName, 'from a successful upload; no unresolved image URL will be sent.'); pm.execution.skipRequest(); } else { pm.collectionVariables.set(variableName, normalizedImageId); if (variableName === 'pngImageId') pm.collectionVariables.set('imageId', normalizedImageId); }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+    {
+      "name": "Clear stale Runner session",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Runner starts without an active session', () => pm.expect([204, 401]).to.include(pm.response.code));",
+        "console.log('Initial session reset status:', pm.response.code, '- 204 means a stale session was cleared; 401 means the jar was already anonymous.');"
+      ] } }]
+    },
+    {
+      "name": "Reject unauthenticated image list",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/films/1/images" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('unauthenticated list is rejected', () => pm.response.to.have.status(401));"] } }]
+    },
+    {
+      "name": "Login owner Alice",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"email\":\"alice@example.com\",\"password\":\"password\"}" },
+        "url": "{{baseUrl}}/api/sessions"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('owner login status is exactly 200', () => pm.response.to.have.status(200));",
+        "let user = {}; try { user = pm.response.json(); } catch (error) { console.error('Owner login did not return JSON:', pm.response.text()); }",
+        "pm.test('authenticated user is Alice', () => { pm.expect(user.id).to.eql(1); pm.expect(user.email).to.eql('alice@example.com'); });",
+        "const hasSessionCookie = pm.cookies.has('connect.sid');",
+        "pm.test('localhost session cookie exists after owner login', () => pm.expect(hasSessionCookie, 'Missing connect.sid: Collection Runner did not retain the localhost session cookie').to.eql(true));",
+        "if (!hasSessionCookie) console.error('LOGIN COOKIE MISSING: enable the Postman cookie jar, use one localhost baseUrl, and run from the first request. Set-Cookie:', pm.response.headers.get('Set-Cookie'));"
+      ] } }]
+    },
+    {
+      "name": "Create public film",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"title\":\"Lab02 Postman Runner\",\"private\":false}" },
+        "url": "{{baseUrl}}/api/films"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('film creation status is exactly 201', () => pm.response.to.have.status(201));",
+        "let film = {}; try { film = pm.response.json(); } catch (error) { console.error('Film creation did not return JSON:', pm.response.text()); }",
+        "const normalizedFilmId = String(film.id ?? '').trim();",
+        "const validFilmId = /^\\d+$/.test(normalizedFilmId) && Number(normalizedFilmId) > 0;",
+        "pm.test('created film response has a numeric id', () => pm.expect(validFilmId, 'filmId is absent or non-numeric; upload will be skipped').to.eql(true));",
+        "if (pm.response.code === 201 && validFilmId) { pm.collectionVariables.set('filmId', normalizedFilmId); console.log('Saved filmId for this Runner session:', normalizedFilmId); } else { pm.collectionVariables.unset('filmId'); console.error('FILM ID NOT SAVED: status/body:', pm.response.code, pm.response.text()); }"
+      ] } }]
+    }
+      ]
+    },
+    {
+      "name": "Upload and Metadata",
+      "item": [
+    {
+      "name": "Upload valid image as owner",
+      "request": {
+        "method": "POST",
+        "body": { "mode": "formdata", "formdata": [{ "key": "image", "type": "file", "src": "postman/lab02/fixtures/valid.png" }] },
+        "url": "{{baseUrl}}/api/films/{{filmId}}/images"
+      },
+      "event": [
+        { "listen": "prerequest", "script": { "exec": [
+          "const savedFilmId = pm.collectionVariables.get('filmId');",
+          "const validFilmId = /^\\d+$/.test(savedFilmId || '') && Number(savedFilmId) > 0;",
+          "const formdata = pm.request.body && pm.request.body.mode === 'formdata' ? pm.request.body.formdata : undefined;",
+          "const parts = formdata && typeof formdata.all === 'function' ? formdata.all() : (formdata || []);",
+          "const imagePart = Array.from(parts).find(part => part.key === 'image');",
+          "const validFileField = Boolean(imagePart && imagePart.type === 'file');",
+          "pm.test('upload filmId is present and numeric', () => pm.expect(validFilmId, 'filmId was not saved; refusing to call /films/undefined/images').to.eql(true));",
+          "pm.test('multipart image field is configured as file', () => pm.expect(validFileField, 'Body → form-data → image must be type File').to.eql(true));",
+          "if (!validFilmId || !validFileField) { console.error('UPLOAD SKIPPED:', { savedFilmId, bodyMode: pm.request.body && pm.request.body.mode, imageType: imagePart && imagePart.type }); pm.execution.skipRequest(); }",
+          "console.log('Uploading image to exact filmId:', savedFilmId, 'file:', imagePart && imagePart.src);"
+        ] } },
+        { "listen": "test", "script": { "exec": [
+          "if (pm.response.code === 401) console.error('UPLOAD 401: Runner did not preserve the owner authentication cookie.');",
+          "if (pm.response.code === 403) console.error('UPLOAD 403: the active Runner user does not own the created film.');",
+          "if (pm.response.code === 404 || pm.response.code === 400) console.error('UPLOAD ' + pm.response.code + ': filmId was not saved correctly:', pm.collectionVariables.get('filmId'));",
+          "if (pm.response.code === 415) console.error('UPLOAD 415 ROOT CAUSE: Desktop Runner could not read the saved file reference, or the selected file failed strict image validation. Response:', pm.response.text(), 'Saved src:', pm.request.body && pm.request.body.formdata);",
+          "let image = {}; let validJson = false; try { image = pm.response.json(); validJson = true; } catch (error) { console.error('Upload response was not JSON:', pm.response.text()); }",
+          "const normalizedImageId = String(image.id ?? '').trim();",
+          "const validImageId = /^\\d+$/.test(normalizedImageId) && Number(normalizedImageId) > 0;",
+          "const supportedMediaTypes = ['image/png','image/jpeg','image/jpg','image/gif'];",
+          "pm.test('upload succeeds and returns complete supported-image metadata', () => { pm.response.to.have.status(201); pm.expect(validJson, 'upload response must be valid JSON').to.eql(true); pm.expect(validImageId, 'imageId is absent, non-numeric, or not positive').to.eql(true); pm.expect(image).to.include.keys('filmId','name','mediaType','self'); pm.expect(String(image.filmId).trim()).to.eql(pm.collectionVariables.get('filmId')); pm.expect(supportedMediaTypes).to.include(image.mediaType); });",
+          "if (pm.response.code === 201 && validJson && validImageId) { pm.collectionVariables.set('imageId', normalizedImageId); pm.collectionVariables.set('pngImageId', normalizedImageId); pm.collectionVariables.set('uploadSucceeded', 'true'); console.log('Saved normalized pngImageId:', normalizedImageId); } else { pm.collectionVariables.unset('imageId'); pm.collectionVariables.unset('pngImageId'); pm.collectionVariables.set('uploadSucceeded', 'false'); console.error('UPLOAD FAILED ONCE: PNG-dependent requests will be skipped; film/session cleanup will continue.'); }"
+        ] } }
+      ]
+    },
+    {
+      "name": "Upload valid JPEG as owner",
+      "request": {
+        "method": "POST",
+        "body": { "mode": "formdata", "formdata": [{ "key": "image", "type": "file", "src": "postman/lab02/fixtures/valid.jpg" }] },
+        "url": "{{baseUrl}}/api/films/{{filmId}}/images"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "let body = {}; let json = false; try { body = pm.response.json(); json = true; } catch (error) { console.error('JPEG upload response:', pm.response.text()); }",
+        "const id = String(body.id ?? '').trim(); const validId = /^\\d+$/.test(id) && Number(id) > 0;",
+        "pm.test('JPEG upload succeeds with canonical metadata', () => { pm.response.to.have.status(201); pm.expect(json).to.eql(true); pm.expect(validId).to.eql(true); pm.expect(body.mediaType).to.be.oneOf(['image/jpeg','image/jpg']); });",
+        "if (pm.response.code === 201 && json && validId) pm.collectionVariables.set('jpegImageId', id); else { pm.collectionVariables.unset('jpegImageId'); console.error('JPEG UPLOAD FAILED: JPEG-dependent requests will be skipped.'); }"
+      ] } }]
+    },
+    {
+      "name": "Upload valid GIF as owner",
+      "request": {
+        "method": "POST",
+        "body": { "mode": "formdata", "formdata": [{ "key": "image", "type": "file", "src": "postman/lab02/fixtures/valid.gif" }] },
+        "url": "{{baseUrl}}/api/films/{{filmId}}/images"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "let body = {}; let json = false; try { body = pm.response.json(); json = true; } catch (error) { console.error('GIF upload response:', pm.response.text()); }",
+        "const id = String(body.id ?? '').trim(); const validId = /^\\d+$/.test(id) && Number(id) > 0;",
+        "pm.test('GIF upload succeeds with canonical metadata', () => { pm.response.to.have.status(201); pm.expect(json).to.eql(true); pm.expect(validId).to.eql(true); pm.expect(body.mediaType).to.eql('image/gif'); });",
+        "if (pm.response.code === 201 && json && validId) pm.collectionVariables.set('gifImageId', id); else { pm.collectionVariables.unset('gifImageId'); console.error('GIF UPLOAD FAILED: GIF-dependent requests will be skipped.'); }"
+      ] } }]
+    },
+    {
+      "name": "List metadata as owner",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/films/{{filmId}}/images" },
+      "event": [{ "listen": "test", "script": { "exec": ["const body = pm.response.json(); pm.test('owner receives unpaginated metadata array', () => { pm.response.to.have.status(200); pm.expect(body).to.be.an('array'); pm.expect(body.map(x => String(x.id))).to.include(pm.collectionVariables.get('imageId')); });"] } }]
+    },
+    {
+      "name": "Read JSON metadata as owner",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{pngImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('owner reads metadata without internal storage fields', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); const body=pm.response.json(); pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('pngImageId')); pm.expect(body).not.to.have.any.keys('storageKey','filePath','bytes','representations'); });"] } }]
+    }
+      ]
+    },
+    {
+      "name": "Content Negotiation",
+      "item": [
+    {
+      "name": "Read PNG source as owner",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "image/png" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{pngImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('owner receives PNG bytes', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('image/png'); pm.expect(Number(pm.response.headers.get('Content-Length'))).to.eql(pm.response.stream.length); pm.expect(() => JSON.parse(pm.response.text())).to.throw(); });"] } }]
+    },
+    {
+      "name": "Read JPEG source as owner",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "image/jpeg" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{jpegImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('owner receives canonical JPEG bytes', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('image/jpeg'); pm.expect(Number(pm.response.headers.get('Content-Length'))).to.eql(pm.response.stream.length); });"] } }]
+    },
+    {
+      "name": "Read JPEG source through image/jpg alias",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "image/jpg" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{jpegImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('image/jpg negotiates canonical image/jpeg', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('image/jpeg'); });"] } }]
+    },
+    {
+      "name": "Read GIF source as owner",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "image/gif" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{gifImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('owner receives GIF bytes', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('image/gif'); pm.expect(Number(pm.response.headers.get('Content-Length'))).to.eql(pm.response.stream.length); });"] } }]
+    }
+      ]
+    },
+    {
+      "name": "gRPC Conversion and Cache",
+      "item": [
+    {
+      "name": "Convert PNG source to JPEG",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "image/jpeg" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{pngImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('missing JPEG representation is converted', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('image/jpeg'); pm.expect(pm.response.stream[0]).to.eql(255); pm.expect(pm.response.stream[1]).to.eql(216); });"] } }]
+    },
+    {
+      "name": "Read cached JPEG conversion",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "image/jpeg" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{pngImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('repeated JPEG request returns persisted representation', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('image/jpeg'); });"] } }]
+    },
+    {
+      "name": "Convert JPEG source to GIF",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "image/gif" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{jpegImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('missing GIF representation is converted', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('image/gif'); pm.expect(pm.response.stream.slice(0,3).toString()).to.eql('GIF'); });"] } }]
+    },
+    {
+      "name": "Read cached GIF conversion",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "image/gif" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{jpegImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('repeated GIF request returns persisted representation', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('image/gif'); });"] } }]
+    }
+      ]
+    },
+    {
+      "name": "Failure Cases",
+      "item": [
+    {
+      "name": "Reject unsupported representation",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/xml" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{pngImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('unsupported representation returns JSON 406', () => { pm.response.to.have.status(406); pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });"] } }]
+    }
+      ]
+    },
+    {
+      "name": "Authorization",
+      "item": [
+    {
+      "name": "Invite reviewer Frank",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "[{\"reviewerId\":2}]" },
+        "url": "{{baseUrl}}/api/films/{{filmId}}/reviews"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('reviewer invited', () => pm.response.to.have.status(201));"] } }]
+    },
+    {
+      "name": "Logout owner",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('logout succeeds', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Login assigned reviewer Frank",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"email\":\"frank@example.com\",\"password\":\"password\"}" },
+        "url": "{{baseUrl}}/api/sessions"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('reviewer login status is exactly 200', () => pm.response.to.have.status(200));",
+        "const user = pm.response.json(); pm.test('active session is Frank only', () => { pm.expect(user.id).to.eql(2); pm.expect(user.email).to.eql('frank@example.com'); });",
+        "pm.test('reviewer session cookie exists', () => pm.expect(pm.cookies.has('connect.sid'), 'Runner cookie jar lost connect.sid during owner-to-reviewer transition').to.eql(true));"
+      ] } }]
+    },
+    {
+      "name": "Assigned reviewer lists metadata",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/films/{{filmId}}/images" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('assigned reviewer may list', () => { pm.response.to.have.status(200); pm.expect(pm.response.json()).to.be.an('array'); });"] } }]
+    },
+    {
+      "name": "Reviewer reads converted JPEG",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "image/jpeg" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{pngImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('assigned reviewer receives converted JPEG', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('image/jpeg'); });"] } }]
+    },
+    {
+      "name": "Reviewer cannot delete",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{pngImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('reviewer delete denied', () => pm.response.to.have.status(403));"] } }]
+    },
+    {
+      "name": "Logout reviewer",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('logout succeeds', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Login unrelated Rene",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"email\":\"rene@example.com\",\"password\":\"password\"}" },
+        "url": "{{baseUrl}}/api/sessions"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('unrelated login status is exactly 200', () => pm.response.to.have.status(200));",
+        "const user = pm.response.json(); pm.test('active session is Rene only', () => { pm.expect(user.id).to.eql(4); pm.expect(user.email).to.eql('rene@example.com'); });",
+        "pm.test('unrelated-user session cookie exists', () => pm.expect(pm.cookies.has('connect.sid'), 'Runner cookie jar lost connect.sid during reviewer-to-unrelated transition').to.eql(true));"
+      ] } }]
+    },
+    {
+      "name": "Unrelated user cannot list",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/films/{{filmId}}/images" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('unrelated list denied', () => pm.response.to.have.status(403));"] } }]
+    },
+    {
+      "name": "Unrelated user cannot read converted JPEG",
+      "request": { "method": "GET", "header": [{ "key": "Accept", "value": "image/jpeg" }], "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{pngImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('unrelated user binary access is denied', () => pm.response.to.have.status(403));"] } }]
+    },
+    {
+      "name": "Logout unrelated user",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('logout succeeds', () => pm.response.to.have.status(204));"] } }]
+    }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "item": [
+    {
+      "name": "Login owner for cleanup",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"email\":\"alice@example.com\",\"password\":\"password\"}" },
+        "url": "{{baseUrl}}/api/sessions"
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('cleanup owner login status is exactly 200', () => pm.response.to.have.status(200));",
+        "const user = pm.response.json(); pm.test('cleanup session is Alice only', () => { pm.expect(user.id).to.eql(1); pm.expect(user.email).to.eql('alice@example.com'); });",
+        "pm.test('cleanup owner session cookie exists', () => pm.expect(pm.cookies.has('connect.sid'), 'Runner cookie jar lost connect.sid before cleanup').to.eql(true));"
+      ] } }]
+    },
+    {
+      "name": "Owner deletes image",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{pngImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('owner deletes image', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Owner deletes JPEG image",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{jpegImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('owner deletes JPEG image', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Owner deletes GIF image",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/films/{{filmId}}/images/{{gifImageId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('owner deletes GIF image', () => pm.response.to.have.status(204));"] } }]
+    },
+    {
+      "name": "Owner deletes film",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/films/{{filmId}}" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('owner deletes film', () => pm.response.to.have.status(204));"] } }]
+    }
+      ]
+    }
+  ]
+}

@@ -2,9 +2,10 @@
 const bcrypt = require('bcrypt');
 const { AsyncLocalStorage } = require('async_hooks');
 const { isStrictCalendarDate } = require('../validation/date');
+const ImageService = require('../images/ImageService');
 
 class FilmManagerService {
-    constructor() {
+    constructor(options = {}) {
         this.users = [
             { id: 1, name: 'Alice', email: 'alice@example.com', passwordHash: bcrypt.hashSync('password', 10) },
             { id: 2, name: 'Frank', email: 'frank@example.com', passwordHash: bcrypt.hashSync('password', 10) },
@@ -26,9 +27,8 @@ class FilmManagerService {
             { filmId: 4, reviewerId: 4, completed: true, reviewDate: '2026-05-01', rating: 4, description: 'Warm and precise.', active: false },
         ];
 
-        this.images = [];
         this.nextFilmId = 5;
-        this.nextImageId = 1;
+        this.imageService = options.imageService || new ImageService(options.imageOptions);
         this.requestIdentity = new AsyncLocalStorage();
         this.fallbackUserId = null;
         this.allowedImageMediaTypes = new Set(['image/png', 'image/jpg', 'image/jpeg', 'image/gif']);
@@ -463,9 +463,9 @@ focused.
         if (!film) throw this.error('Film not found.', 404);
         if (film.ownerId !== userId) throw this.error('Only the owner can delete this film.', 403);
         const deletedWasPublic = film.public;
+        this.imageService.deleteByFilm(film.id);
         this.films = this.films.filter((item) => item.id !== film.id);
         this.reviews = this.reviews.filter((review) => review.filmId !== film.id);
-        this.images = this.images.filter((image) => image.filmId !== film.id);
         if (deletedWasPublic) return { mqtt: this.mqttFilmMessage(film.id, true) };
         return true;
     }
@@ -587,66 +587,41 @@ focused.
         };
     }
 
-    imageMediaType(fileName = '') {
-        const lowerName = String(fileName).toLowerCase();
-        if (lowerName.endsWith('.png')) return 'image/png';
-        if (lowerName.endsWith('.jpg')) return 'image/jpeg';
-        if (lowerName.endsWith('.jpeg')) return 'image/jpeg';
-        if (lowerName.endsWith('.gif')) return 'image/gif';
-        return null;
-    }
-
     filmsFilmIdImagesGET(filmId) {
-        const film = this.film(filmId);
-        if (!film) throw this.error('Film not found.', 404);
-        if (!this.canReadFilm(this.currentUserId, film)) throw this.error('Image access denied.', 403);
-        return this.images.filter((image) => image.filmId === Number(filmId));
+        const userId = this.requireUser();
+        return this.imageService.list(filmId, userId, this.film.bind(this), this.isReviewer.bind(this));
     }
 
     filmsFilmIdImagesPOST(filmId, imageInput = {}) {
-        const film = this.film(filmId);
-        if (!film) throw this.error('Film not found.', 404);
-        if (!film.public || film.ownerId !== this.currentUserId) {
-            throw this.error('Only the owner can add images to a public film.', 403);
+        if (!this.currentUserId) {
+            this.imageService.storage.discardUpload(imageInput);
+            throw this.error('Authentication required.', 401);
         }
-        const uploadedName = typeof imageInput === 'string' ? imageInput : imageInput.name;
-        const mediaType = imageInput.mediaType || this.imageMediaType(uploadedName) || 'image/png';
-        if (!this.allowedImageMediaTypes.has(mediaType)) {
-            throw this.error('Unsupported image media type.', 415);
-        }
-        const image = {
-            id: this.nextImageId,
-            filmId: Number(filmId),
-            name: uploadedName || `image-${this.nextImageId}`,
-            mediaType,
-            self: `/api/films/${filmId}/images/${this.nextImageId}`,
-        };
-        this.nextImageId += 1;
-        this.images.push(image);
-        return image;
+        const userId = this.currentUserId;
+        return this.imageService.upload(filmId, userId, imageInput, this.film.bind(this));
     }
 
     filmsFilmIdImagesImageIdGET(filmId, imageId, accept = 'application/json') {
-        const film = this.film(filmId);
-        if (!film) throw this.error('Film not found.', 404);
-        if (!this.canReadFilm(this.currentUserId, film)) throw this.error('Image access denied.', 403);
-        const image = this.images.find((item) => item.filmId === Number(filmId) && item.id === Number(imageId));
-        if (!image) throw this.error('Image not found.', 404);
-        const acceptedTypes = String(accept || 'application/json').split(',').map((item) => item.split(';')[0].trim());
-        const requestedType = acceptedTypes.find((item) => item === '*/*' || item === 'application/json' || this.allowedImageMediaTypes.has(item));
-        if (!requestedType) throw this.error('Unsupported requested image media type.', 406);
-        return image;
+        const userId = this.requireUser();
+        const { negotiateAccept } = require('../http/AcceptNegotiation');
+        const requestedType = negotiateAccept(accept);
+        if (!requestedType) throw this.error('No acceptable image representation is supported.', 406);
+        return this.imageService.get(
+            filmId,
+            imageId,
+            userId,
+            requestedType,
+            this.film.bind(this),
+            this.isReviewer.bind(this),
+        );
     }
 
     filmsFilmIdImagesImageIdDELETE(filmId, imageId) {
-        const film = this.film(filmId);
-        if (!film) throw this.error('Film not found.', 404);
-        if (film.ownerId !== this.currentUserId) throw this.error('Only the owner can delete images from this film.', 403);
-        const image = this.images.find((item) => item.filmId === Number(filmId) && item.id === Number(imageId));
-        if (!image) throw this.error('Image not found.', 404);
-        this.images = this.images.filter((item) => item !== image);
-        return true;
+        const userId = this.requireUser();
+        return this.imageService.delete(filmId, imageId, userId, this.film.bind(this));
     }
 }
 
-module.exports = new FilmManagerService();
+const filmManagerService = new FilmManagerService();
+module.exports = filmManagerService;
+module.exports.FilmManagerService = FilmManagerService;

@@ -1,24 +1,42 @@
 syntax = "proto3";
 
 package converter;
+option java_multiple_files = true;
+option java_package = "dsp.lab02.converter.proto";
 
 service Converter {
-  rpc Convert(stream ImageChunk) returns (stream ImageChunk);
+  rpc Convert(stream ConvertRequest) returns (stream ConvertResponse);
 }
 
-message ConversionRequest {
+message ConversionMetadata {
   string source_media_type = 1;
   string target_media_type = 2;
+  string request_id = 3;
 }
 
-message ImageChunk {
+message ConvertRequest {
   oneof payload {
-    ConversionRequest request = 1;
-    bytes content = 2;
-    ConversionError error = 3;
+    ConversionMetadata metadata = 1;
+    bytes chunk = 2;
   }
 }
 
-message ConversionError {
-  string message = 1;
+message ConversionResult {
+  string request_id = 1;
+  string media_type = 2;
+  uint64 byte_length = 3;
+}
+
+message ConversionFailure {
+  string request_id = 1;
+  string code = 2;
+  string message = 3;
+}
+
+message ConvertResponse {
+  oneof payload {
+    bytes chunk = 1;
+    ConversionResult result = 2;
+    ConversionFailure failure = 3;
+  }
 }

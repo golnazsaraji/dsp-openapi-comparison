@@ -1,4 +1,10 @@
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const testRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsp-lab01-service-'));
+process.env.UPLOAD_DIR = path.join(testRoot, 'uploads');
+process.env.IMAGE_METADATA_PATH = path.join(testRoot, 'image-metadata.json');
 const service = require('../shared-services/src/services/FilmManagerService');
 
 function status(action, expected) {
@@ -117,7 +123,15 @@ function status(action, expected) {
     assert(!JSON.stringify(page).includes('/change/me'));
 
     service.currentUserId = 2;
-    const image = service.filmsFilmIdImagesPOST(created.id, 'service-test.jpg');
+    fs.mkdirSync(process.env.UPLOAD_DIR, { recursive: true });
+    const sourceJpeg = path.join(__dirname, '..', 'postman', 'lab02', 'fixtures', 'valid.jpg');
+    fs.copyFileSync(sourceJpeg, path.join(process.env.UPLOAD_DIR, 'temporary-jpeg'));
+    const image = service.filmsFilmIdImagesPOST(created.id, {
+        originalName: 'service-test.jpg',
+        storedName: 'temporary-jpeg',
+        mimeType: 'image/jpeg',
+        size: fs.statSync(sourceJpeg).size,
+    });
     assert.deepStrictEqual(Object.keys(image).sort(), ['filmId', 'id', 'mediaType', 'name', 'self']);
     assert.strictEqual(image.filmId, created.id);
     assert.strictEqual(image.name, 'service-test.jpg');
@@ -125,7 +139,9 @@ function status(action, expected) {
     assert.strictEqual(image.self, `/api/films/${created.id}/images/${image.id}`);
 
     console.log('Lab01 shared-service tests passed.');
+    fs.rmSync(testRoot, { recursive: true, force: true });
 })().catch((error) => {
+    fs.rmSync(testRoot, { recursive: true, force: true });
     console.error(error);
     process.exitCode = 1;
 });
