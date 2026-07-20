@@ -108,7 +108,12 @@
     },
     {
       "key": "runImageUpload",
-      "value": "false",
+      "value": "true",
+      "type": "string"
+    },
+    {
+      "key": "createdPublicFilmSelf",
+      "value": "",
       "type": "string"
     }
   ],
@@ -138,7 +143,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "['currentUserId','secondaryUserId','createdPublicFilmId','createdPrivateFilmId','createdReviewFilmId','createdBalancedFilmId1','createdBalancedFilmId2','invitedReviewerId','createdImageId','publicFilmId','publicReviewFilmId','publicReviewerId','otherReviewerIds','validationFilmId','validationPrivateFilmId'].forEach((key) => pm.collectionVariables.unset(key));",
+                  "['currentUserId','secondaryUserId','createdPublicFilmId','createdPrivateFilmId','createdReviewFilmId','createdBalancedFilmId1','createdBalancedFilmId2','invitedReviewerId','createdImageId','publicFilmId','publicReviewFilmId','publicReviewerId','otherReviewerIds','validationFilmId','validationPrivateFilmId','createdPublicFilmSelf'].forEach((key) => pm.collectionVariables.unset(key));",
                   "pm.cookies.jar().clear(pm.collectionVariables.get('baseUrl'), (error) => { if (error) console.warn('Cookie jar clear failed; run Logout before unauthenticated checks.', error); });",
                   "console.log('Runtime collection state cleared. Static credentials and baseUrl were preserved.');"
                 ]
@@ -150,7 +155,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status is exactly 200', () => pm.response.to.have.status(200));",
-                  "if (pm.response.code !== 200) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                  "if (pm.response.code !== 200) console.error('Unexpected response', pm.response.code, pm.response.text());",
+                  "pm.sendRequest({ url: `${pm.variables.get('baseUrl')}/api/sessions/current`, method: 'DELETE' }, (error) => { if (error) console.warn('Session normalization request failed', error); });"
                 ]
               }
             }
@@ -316,6 +322,29 @@
                   "const body = pm.response.json();",
                   "pm.test('Authenticated user fields are safe', () => { pm.expect(body).to.include.keys('id','name','email'); pm.expect(body).not.to.have.any.keys('password','passwordHash','hash'); });",
                   "pm.collectionVariables.set('currentUserId', String(body.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get current authenticated user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/sessions/current"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) console.error('Unexpected response', pm.response.code, pm.response.text());",
+                  "const body = pm.response.json();",
+                  "pm.test('Current user is safe and navigable', () => { pm.expect(body).to.include.keys('id','name','email','self'); pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('currentUserId')); pm.expect(body.self).to.eql(`/api/users/${body.id}`); pm.expect(body).not.to.have.any.keys('password','passwordHash','hash','salt'); });"
                 ]
               }
             }
@@ -893,7 +922,33 @@
           ]
         },
         {
-          "name": "List owned private films",
+          "name": "Find created public film in deterministic public collection",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/public?page=1&limit=100"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) console.error('Unexpected response', pm.response.code, pm.response.text());",
+                  "const body = pm.response.json();",
+                  "const created = body.films.find((film) => String(film.id) === pm.collectionVariables.get('createdPublicFilmId'));",
+                  "pm.test('Created public film is visible with coherent pagination', () => { pm.expect(body.currentPage).to.eql(1); pm.expect(body.films.length).to.be.at.most(100); pm.expect(body.totalItems).to.be.at.least(body.films.length); pm.expect(body.totalPages).to.eql(Math.ceil(body.totalItems / 100)); pm.expect(created).to.be.an('object'); });",
+                  "pm.test('Public ordering and fields are deterministic and safe', () => { const ids = body.films.map((film) => film.id); pm.expect(ids).to.eql([...ids].sort((a,b) => a-b)); body.films.forEach((film) => pm.expect(film).not.to.have.any.keys('watchDate','rating','favorite')); });",
+                  "pm.collectionVariables.set('createdPublicFilmSelf', created.self);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List owned private films (paginated)",
           "request": {
             "method": "GET",
             "header": [],
@@ -925,7 +980,7 @@
           ]
         },
         {
-          "name": "Get owned private film",
+          "name": "Get one owned private film",
           "request": {
             "method": "GET",
             "header": [],
@@ -1255,6 +1310,50 @@
                   "const body = pm.response.json();",
                   "pm.test('Authenticated user fields are safe', () => { pm.expect(body).to.include.keys('id','name','email'); pm.expect(body).not.to.have.any.keys('password','passwordHash','hash'); });",
                   "pm.collectionVariables.set('secondaryUserId', String(body.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Secondary user follows primary public film self link",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}{{createdPublicFilmSelf}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) console.error('Unexpected response', pm.response.code, pm.response.text());",
+                  "const body = pm.response.json();",
+                  "pm.test('Another user can retrieve the public film', () => { pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('createdPublicFilmId')); pm.expect(body.private).to.eql(false); pm.expect(body).not.to.have.any.keys('watchDate','rating','favorite'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Other user cannot retrieve primary private film",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/{{createdPrivateFilmId}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 404', () => pm.response.to.have.status(404));",
+                  "if (pm.response.code !== 404) console.error('Unexpected response', pm.response.code, pm.response.text());"
                 ]
               }
             }
@@ -1907,6 +2006,29 @@
           ]
         },
         {
+          "name": "Get completed review and preserved client date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/public/{{createdReviewFilmId}}/reviews/{{invitedReviewerId}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) console.error('Unexpected response', pm.response.code, pm.response.text());",
+                  "const body = pm.response.json();",
+                  "pm.test('Completed review is deterministic and safe', () => { pm.expect(String(body.filmId)).to.eql(pm.collectionVariables.get('createdReviewFilmId')); pm.expect(String(body.reviewerId)).to.eql(pm.collectionVariables.get('invitedReviewerId')); pm.expect(body.completed).to.eql(true); pm.expect(body.reviewDate).to.eql('2026-07-11'); pm.expect(body.rating).to.eql(0); pm.expect(body.self).to.eql(`/api/films/public/${body.filmId}/reviews/${body.reviewerId}`); pm.expect(body.reviewer).not.to.have.any.keys('password','passwordHash','hash','salt'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Logout invited reviewer",
           "request": {
             "method": "DELETE",
@@ -2401,7 +2523,12 @@
           "name": "Upload image to current-run public film",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data; boundary=Lab01ImageBoundary"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/films/{{createdPublicFilmId}}/images",
               "host": [
@@ -2415,14 +2542,8 @@
               ]
             },
             "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "image",
-                  "type": "file",
-                  "src": []
-                }
-              ]
+              "mode": "raw",
+              "raw": "--Lab01ImageBoundary\r\nContent-Disposition: form-data; name=\"image\"; filename=\"lab01-fixture.jpg\"\r\nContent-Type: image/jpeg\r\n\r\nLab01 portable image fixture\r\n--Lab01ImageBoundary--\r\n"
             }
           },
           "response": [],
@@ -2445,7 +2566,8 @@
                   "pm.test('Status is exactly 201', () => pm.response.to.have.status(201));",
                   "if (pm.response.code !== 201) console.error('Unexpected response', pm.response.code, pm.response.text());",
                   "const body = pm.response.json();",
-                  "pm.test('Uploaded image metadata is complete', () => { pm.expect(body).to.include.keys('id','filmId','name','mediaType','self'); pm.expect(String(body.filmId)).to.eql(pm.collectionVariables.get('createdPublicFilmId')); }); pm.collectionVariables.set('createdImageId', String(body.id));"
+                  "pm.test('Upload response is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.match(/^application\\/json(?:;|$)/i));",
+                  "pm.test('Uploaded image metadata is complete', () => { pm.expect(body).to.include.keys('id','filmId','name','mediaType','self'); pm.expect(String(body.filmId)).to.eql(pm.collectionVariables.get('createdPublicFilmId')); pm.expect(body.mediaType).to.eql('image/jpeg'); pm.expect(body.self).to.eql(`/api/films/${body.filmId}/images/${body.id}`); }); pm.collectionVariables.set('createdImageId', String(body.id));"
                 ]
               }
             }
@@ -2528,7 +2650,7 @@
                   "pm.test('Status is exactly 200', () => pm.response.to.have.status(200));",
                   "if (pm.response.code !== 200) console.error('Unexpected response', pm.response.code, pm.response.text());",
                   "const body = pm.response.json();",
-                  "pm.test('Image identity matches', () => pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('createdImageId')));"
+                  "pm.test('Image metadata is complete and matches', () => { pm.expect(body).to.include.keys('id','filmId','name','mediaType','self'); pm.expect(String(body.id)).to.eql(pm.collectionVariables.get('createdImageId')); pm.expect(String(body.filmId)).to.eql(pm.collectionVariables.get('createdPublicFilmId')); pm.expect(body.mediaType).to.eql('image/jpeg'); pm.expect(body.self).to.eql(`/api/films/${body.filmId}/images/${body.id}`); });"
                 ]
               }
             }
@@ -2996,6 +3118,146 @@
           ]
         },
         {
+          "name": "Reject invalid reviewDate format",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completed\": true,\n  \"reviewDate\": \"11-07-2026\",\n  \"rating\": 5,\n  \"review\": \"Invalid date format\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films/{{createdReviewFilmId}}/reviews/current"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject impossible reviewDate",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completed\": true,\n  \"reviewDate\": \"2026-02-30\",\n  \"rating\": 5,\n  \"review\": \"Impossible date\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films/{{createdReviewFilmId}}/reviews/current"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject negative review rating",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completed\": true,\n  \"reviewDate\": \"2026-07-11\",\n  \"rating\": -1,\n  \"review\": \"Invalid rating\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films/{{createdReviewFilmId}}/reviews/current"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject review rating above ten",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completed\": true,\n  \"reviewDate\": \"2026-07-11\",\n  \"rating\": 11,\n  \"review\": \"Invalid rating\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films/{{createdReviewFilmId}}/reviews/current"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Accept review rating zero",
           "request": {
             "method": "PUT",
@@ -3084,6 +3346,251 @@
                   "const body = pm.response.json();",
                   "pm.test('Authenticated user fields are safe', () => { pm.expect(body).to.include.keys('id','name','email'); pm.expect(body).not.to.have.any.keys('password','passwordHash','hash'); });",
                   "pm.collectionVariables.set('currentUserId', String(body.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject malformed film JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Broken JSON\",\n  \"private\": false,",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject film missing title",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"private\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject film missing private",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Missing private\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject wrong private field type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Wrong type\",\n  \"private\": \"false\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject invalid private watchDate format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Invalid date\",\n  \"private\": true,\n  \"watchDate\": \"11-07-2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject impossible private watchDate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Impossible date\",\n  \"private\": true,\n  \"watchDate\": \"2026-02-30\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject unknown film property",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Unknown property\",\n  \"private\": false,\n  \"unexpected\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/films"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 400', () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) console.error('Unexpected response', pm.response.code, pm.response.text());"
                 ]
               }
             }
@@ -4081,6 +4588,90 @@
           ]
         },
         {
+          "name": "Deleted public film is gone",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/public/{{createdPublicFilmId}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 404', () => pm.response.to.have.status(404));",
+                  "if (pm.response.code !== 404) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deleted private film is gone",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/{{createdPrivateFilmId}}"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 404', () => pm.response.to.have.status(404));",
+                  "if (pm.response.code !== 404) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deleted film reviews are gone",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/public/{{createdReviewFilmId}}/reviews"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 404', () => pm.response.to.have.status(404));",
+                  "if (pm.response.code !== 404) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deleted film images are gone",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films/{{createdPublicFilmId}}/images"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 404', () => pm.response.to.have.status(404));",
+                  "if (pm.response.code !== 404) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Logout after cleanup",
           "request": {
             "method": "DELETE",
@@ -4106,6 +4697,27 @@
                 "exec": [
                   "pm.test('Status is exactly 204', () => pm.response.to.have.status(204));",
                   "if (pm.response.code !== 204) console.error('Unexpected response', pm.response.code, pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Protected endpoint after final logout",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/films"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is exactly 401', () => pm.response.to.have.status(401));",
+                  "if (pm.response.code !== 401) console.error('Unexpected response', pm.response.code, pm.response.text());"
                 ]
               }
             }

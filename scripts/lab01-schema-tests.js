@@ -20,6 +20,8 @@ expect(film, { id: 1, title: 'Public', owner: 1, private: false }, true, 'minima
 expect(film, { id: 1, title: 'Public', owner: 1, private: false, favorite: false }, false, 'public conditional fields');
 expect(film, { id: 2, title: 'Private', owner: 1, private: true, rating: 0, favorite: false }, true, 'private rating lower bound');
 expect(film, { id: 2, title: 'Private', owner: 1, private: true, watchDate: '2026-07-11', rating: 10, favorite: true }, true, 'private conditional fields and rating upper bound');
+expect(film, { id: 2, title: 'Private', owner: 1, private: true, watchDate: '11-07-2026' }, false, 'private watchDate format');
+expect(film, { id: 2, title: 'Private', owner: 1, private: true, watchDate: '2026-02-30' }, false, 'private impossible watchDate');
 expect(film, { id: 1, title: 'Public', owner: 1, private: false, watchDate: '2026-07-11' }, false, 'public watchDate');
 expect(film, { id: 1, title: 'Public', owner: 1, private: false, rating: 0 }, false, 'public rating');
 expect(film, { id: 2, title: 'Private', owner: 1, private: true, rating: -1 }, false, 'film rating below lower bound');
@@ -29,6 +31,8 @@ const review = ajv.compile(schema('review'));
 expect(review, { filmId: 1, reviewerId: 2, completed: false }, true, 'incomplete review');
 expect(review, { filmId: 1, reviewerId: 2, completed: false, rating: 5 }, false, 'incomplete review fields');
 expect(review, { filmId: 1, reviewerId: 2, completed: true, reviewDate: '2026-07-11', rating: 0, review: 'Clear.' }, true, 'completed review');
+expect(review, { filmId: 1, reviewerId: 2, completed: true, reviewDate: '11-07-2026', rating: 5, review: 'Bad date.' }, false, 'reviewDate format');
+expect(review, { filmId: 1, reviewerId: 2, completed: true, reviewDate: '2026-02-30', rating: 5, review: 'Bad date.' }, false, 'impossible reviewDate');
 expect(review, { filmId: 1, reviewerId: 2, completed: true, rating: 5, review: 'Missing date' }, false, 'completed review date required');
 expect(review, { filmId: 1, reviewerId: 2, completed: true, reviewDate: '2026-07-11', review: 'Missing rating' }, false, 'completed review rating required');
 expect(review, { filmId: 1, reviewerId: 2, completed: true, reviewDate: '2026-07-11', rating: 5 }, false, 'completed review text required');

@@ -205,6 +205,8 @@ async function main() {
     return response.data;
   });
 
+  let uploadedFile;
+
   await step('update created film', async () => {
     const response = await request('PUT', `/api/films/${createdFilm.id}`, {
       title: 'Smoke Test Film Updated',
@@ -238,12 +240,17 @@ async function main() {
     const uploadDirectory = path.resolve(
       process.env.UPLOAD_DIR || path.join(__dirname, '..', 'runtime-data', 'uploaded_files'),
     );
-    const uploadedFile = path.join(uploadDirectory, response.data.name);
+    uploadedFile = path.join(uploadDirectory, response.data.name);
     assert(
       fs.existsSync(uploadedFile),
       `uploaded image should exist in ${uploadDirectory}`,
     );
-    fs.unlinkSync(uploadedFile);
+    const metadata = await request('GET', response.data.self);
+    assertStatus(metadata, 200, `GET ${response.data.self}`);
+    assert(/^application\/json(?:;|$)/i.test(metadata.headers['content-type'] || ''), 'image metadata should be JSON');
+    ['id', 'filmId', 'name', 'mediaType', 'self'].forEach((field) => {
+      assert(metadata.data[field] === response.data[field], `image metadata ${field} should match upload response`);
+    });
   });
 
   await step('remove review invitation', async () => {
@@ -254,6 +261,11 @@ async function main() {
   await step('delete created film', async () => {
     const response = await request('DELETE', `/api/films/${createdFilm.id}`);
     assertStatus(response, [200, 204], `DELETE /api/films/${createdFilm.id}`);
+    assert(!fs.existsSync(uploadedFile), 'deleting a film should remove its stored image file');
+    const deletedFilm = await request('GET', `/api/films/public/${createdFilm.id}`);
+    assertStatus(deletedFilm, 404, `GET deleted film ${createdFilm.id}`);
+    const deletedImages = await request('GET', `/api/films/${createdFilm.id}/images`);
+    assertStatus(deletedImages, 404, `GET images for deleted film ${createdFilm.id}`);
   });
 
   await step('conflict when Karen selects Frank active film', async () => {

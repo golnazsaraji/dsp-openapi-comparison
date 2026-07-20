@@ -1,6 +1,7 @@
 
 const bcrypt = require('bcrypt');
 const { AsyncLocalStorage } = require('async_hooks');
+const { isStrictCalendarDate } = require('../validation/date');
 
 class FilmManagerService {
     constructor() {
@@ -103,6 +104,34 @@ focused.
 
     film(id) {
         return this.films.find((item) => item.id === Number(id));
+    }
+
+    validateFilmInput(filmInput) {
+        if (!filmInput || typeof filmInput !== 'object' || Array.isArray(filmInput)) {
+            throw this.error('Film payload must be an object.', 400);
+        }
+        const allowed = new Set(['title', 'private', 'watchDate', 'rating', 'favorite']);
+        if (Object.keys(filmInput).some((key) => !allowed.has(key))) {
+            throw this.error('Film payload contains unknown properties.', 400);
+        }
+        if (typeof filmInput.title !== 'string' || filmInput.title.length === 0) {
+            throw this.error('title is required.', 400);
+        }
+        if (typeof filmInput.private !== 'boolean') {
+            throw this.error('private is required and must be boolean.', 400);
+        }
+        if (filmInput.watchDate != null && !isStrictCalendarDate(filmInput.watchDate)) {
+            throw this.error('watchDate must be a valid YYYY-MM-DD calendar date.', 400);
+        }
+        if (filmInput.rating != null && (!Number.isInteger(filmInput.rating) || filmInput.rating < 0 || filmInput.rating > 10)) {
+            throw this.error('rating must be an integer between 0 and 10.', 400);
+        }
+        if (filmInput.favorite != null && typeof filmInput.favorite !== 'boolean') {
+            throw this.error('favorite must be boolean.', 400);
+        }
+        if (!filmInput.private && (filmInput.watchDate != null || filmInput.rating != null || filmInput.favorite != null)) {
+            throw this.error('Public films cannot contain watchDate, rating, or favorite.', 400);
+        }
     }
 
     filmDto(film, publicRoute = false) {
@@ -292,7 +321,10 @@ focused.
     }
 
     filmsPublicGET(page, limit) {
-        const films = this.films.filter((film) => film.public).map((film) => this.filmDto(film, true));
+        const films = this.films
+            .filter((film) => film.public)
+            .sort((left, right) => left.id - right.id)
+            .map((film) => this.filmDto(film, true));
         return this.page(films, '/api/films/public', 'films', page, limit);
     }
 
@@ -329,11 +361,8 @@ focused.
 
     filmsPOST(filmInput = {}) {
         const userId = this.requireUser();
-        if (!filmInput.title) throw this.error('title is required');
-        const isPublic = filmInput.private !== undefined ? !filmInput.private : Boolean(filmInput.public);
-        if (isPublic && (filmInput.watchDate != null || filmInput.rating != null || filmInput.favorite != null)) {
-            throw this.error('Public films cannot contain watchDate, rating, or favorite.', 400);
-        }
+        this.validateFilmInput(filmInput);
+        const isPublic = !filmInput.private;
         const film = {
             id: this.nextFilmId,
             title: filmInput.title,
@@ -366,10 +395,9 @@ focused.
     reviewsAutoInvitationsPOST() {
         const userId = this.requireUser();
         const created = [];
-        const invitationCounts = new Map(this.users.map((user) => [
-            user.id,
-            this.reviews.filter((review) => review.reviewerId === user.id).length,
-        ]));
+        // Balance the assignments created by this invocation. Historical invitation totals
+        // must not skew a new batch, whose maximum/minimum reviewer counts may differ by at most 1.
+        const invitationCounts = new Map(this.users.map((user) => [user.id, 0]));
 
         this.films
             .filter((film) => film.public && film.ownerId === userId)
@@ -415,6 +443,7 @@ focused.
         const film = this.film(filmId);
         if (!film) throw this.error('Film not found.', 404);
         if (film.ownerId !== userId) throw this.error('Only the owner can update this film.', 403);
+        this.validateFilmInput(filmInput);
         const requestedPublic = filmInput.private !== undefined ? !filmInput.private : filmInput.public;
         if (requestedPublic !== undefined && Boolean(requestedPublic) !== film.public) {
             throw this.error('Film visibility cannot be changed.', 409);
@@ -494,12 +523,24 @@ focused.
             if (filmHasInvitations) throw this.error('Only the invited reviewer can complete this review.', 403);
             throw this.error('Review invitation not found.', 404);
         }
-        if (body.completed !== true || !body.reviewDate || body.rating == null || !body.review) {
+        const allowed = new Set(['completed', 'reviewDate', 'rating', 'review']);
+        if (!body || typeof body !== 'object' || Array.isArray(body)
+            || Object.keys(body).some((key) => !allowed.has(key))
+            || body.completed !== true || !body.reviewDate || body.rating == null || !body.review) {
             throw this.error('completed, reviewDate, rating, and review are required.', 400);
         }
+        if (!isStrictCalendarDate(body.reviewDate)) {
+            throw this.error('reviewDate must be a valid YYYY-MM-DD calendar date.', 400);
+        }
+        if (!Number.isInteger(body.rating) || body.rating < 0 || body.rating > 10) {
+            throw this.error('rating must be an integer between 0 and 10.', 400);
+        }
+        if (typeof body.review !== 'string' || body.review.length > 1000) {
+            throw this.error('review must be a string of at most 1000 characters.', 400);
+        }
         review.completed = true;
-        review.reviewDate = body.reviewDate || new Date().toISOString().slice(0, 10);
-        review.rating = body.rating ?? review.rating;
+        review.reviewDate = body.reviewDate;
+        review.rating = body.rating;
         review.description = body.review;
         return null;
     }

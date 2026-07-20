@@ -1,4 +1,6 @@
 const FilmManagerService = require('../../shared-services/src/services/FilmManagerService');
+const fs = require('fs');
+const path = require('path');
 
 // Success status codes per operationId. Regeneration-safe home for a value that used to be
 // hard-coded inside out/service.mustache: editing openapi.yaml's response code alone did not
@@ -47,6 +49,22 @@ function responseCookie(operationId) {
     return undefined;
 }
 
+const uploadDirectory = path.resolve(
+    process.env.UPLOAD_DIR || path.join(__dirname, '..', '..', 'runtime-data', 'uploaded_files'),
+);
+
+function removeStoredImages(images) {
+    images.forEach((image) => {
+        if (!image?.name) return;
+        const storedPath = path.join(uploadDirectory, path.basename(image.name));
+        try {
+            fs.unlinkSync(storedPath);
+        } catch (error) {
+            if (error.code !== 'ENOENT') throw error;
+        }
+    });
+}
+
 module.exports = new Proxy({ successStatus, responseCookie }, {
     get(target, operationId) {
         if (operationId in target) return target[operationId];
@@ -59,7 +77,14 @@ module.exports = new Proxy({ successStatus, responseCookie }, {
                 throw error;
             }
 
-            return operation.apply(FilmManagerService, args);
+            const deletedImages = operationId === 'filmsFilmIdDELETE'
+                ? FilmManagerService.images.filter((image) => image.filmId === Number(args[0]))
+                : operationId === 'filmsFilmIdImagesImageIdDELETE'
+                    ? FilmManagerService.images.filter((image) => image.filmId === Number(args[0]) && image.id === Number(args[1]))
+                    : [];
+            const result = await operation.apply(FilmManagerService, args);
+            removeStoredImages(deletedImages);
+            return result;
         };
     },
 });

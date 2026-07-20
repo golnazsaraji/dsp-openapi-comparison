@@ -214,14 +214,15 @@ paths:
       tags: [films]
       security:
         - cookieAuth: []
-      summary: List films owned by the current user
+      summary: List private films owned by the current user
+      description: Returns the authenticated user's private films as a paginated collection. Public films remain available through `/api/films/public`.
       operationId: filmsGET
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Limit'
       responses:
         '200':
-          description: Paginated owned films
+          description: Paginated private films owned by the current user
           content:
             application/json:
               schema:
@@ -298,7 +299,8 @@ paths:
       tags: [films]
       security:
         - cookieAuth: []
-      summary: Get a private film owned by the current user
+      summary: Get one private film owned by the current user
+      description: Returns one private film only when the authenticated user owns it. This is the single-resource counterpart to `GET /api/films`.
       operationId: filmsFilmIdGET
       parameters:
         - $ref: '#/components/parameters/FilmId'
