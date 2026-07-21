@@ -16,6 +16,7 @@
     "test:lab02": "node scripts/lab02-phase1-tests.js && node scripts/lab02-converter-client-tests.js",
     "test:lab02:integration": "node scripts/lab02-grpc-integration-tests.js",
     "test:lab02:proto": "node scripts/lab02-proto-consistency.js",
+    "test:lab03": "node scripts/lab03-protocol-tests.js && node scripts/lab03-client-robustness-tests.js && node scripts/lab03-server-concurrency-tests.js && node scripts/lab03-large-file-and-matrix-tests.js && node scripts/lab03-alpha-conversion-tests.js && node scripts/lab03-interoperability-tests.js",
     "converter:build": "cd shared-services/lab02/converter-java && ./mvnw test package",
     "converter:start": "cd shared-services/lab02/converter-java && ./mvnw exec:java",
     "smoke": "node scripts/smoke-custom.js",
