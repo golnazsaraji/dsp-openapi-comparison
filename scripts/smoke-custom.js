@@ -274,15 +274,28 @@ async function main() {
     assertStatus(deletedImages, 404, `GET images for deleted film ${createdFilm.id}`);
   });
 
-  await step('conflict when Karen selects Frank active film', async () => {
+  await step('two reviewers may independently select the same active film', async () => {
+    // Lab04 authoritative rule: at most one active film *per user*. A film
+    // already active for another reviewer is not a conflict — both Frank
+    // (from the 'select active film' step above) and Karen are invited
+    // reviewers for film 2 and may each have it active at the same time.
     const login = await request('POST', '/api/sessions', {
       email: 'karen@example.com',
       password: 'password',
     });
     assertStatus(login, [200, 201], 'POST /api/sessions as Karen');
 
-    const conflict = await request('PUT', '/api/films/2/active');
-    assertStatus(conflict, 409, 'PUT /api/films/2/active as Karen');
+    const selection = await request('PUT', '/api/films/2/active');
+    assertStatus(selection, 200, 'PUT /api/films/2/active as Karen');
+    assert(selection.data.active === true, "Karen's review for film 2 should become active");
+    assert(selection.data.reviewerId === 3, 'active review should belong to Karen');
+
+    const reviews = await request('GET', '/api/films/public/2/reviews');
+    assertStatus(reviews, 200, 'GET /api/films/public/2/reviews');
+    const frankReview = reviews.data.reviews.find((review) => review.reviewerId === 2);
+    const karenReview = reviews.data.reviews.find((review) => review.reviewerId === 3);
+    assert(frankReview?.active === true, "Frank's active film must be unaffected by Karen's selection");
+    assert(karenReview?.active === true, "Karen's active film should be recorded");
   });
 
   await step('logout invalidates the session', async () => {

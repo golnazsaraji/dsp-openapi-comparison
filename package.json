@@ -17,6 +17,8 @@
     "test:lab02:integration": "node scripts/lab02-grpc-integration-tests.js",
     "test:lab02:proto": "node scripts/lab02-proto-consistency.js",
     "test:lab03": "node scripts/lab03-protocol-tests.js && node scripts/lab03-client-robustness-tests.js && node scripts/lab03-server-concurrency-tests.js && node scripts/lab03-large-file-and-matrix-tests.js && node scripts/lab03-alpha-conversion-tests.js && node scripts/lab03-interoperability-tests.js",
+    "test:lab04": "node scripts/lab04-schema-tests.js && node scripts/lab04-service-tests.js && node scripts/lab04-realtime-tests.js",
+    "test:lab04:client": "cd shared-services/lab04/client-app && npm test && npm run build",
     "converter:build": "cd shared-services/lab02/converter-java && ./mvnw test package",
     "converter:start": "cd shared-services/lab02/converter-java && ./mvnw exec:java",
     "smoke": "node scripts/smoke-custom.js",
@@ -33,6 +35,7 @@
     "bcrypt": "^6.0.0",
     "express-session": "^1.18.2",
     "passport": "^0.7.0",
-    "passport-local": "^1.0.0"
+    "passport-local": "^1.0.0",
+    "ws": "^8.18.0"
   }
 }
