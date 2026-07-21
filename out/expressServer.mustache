@@ -12,6 +12,7 @@ const OpenApiValidator = require('express-openapi-validator');
 const logger = require('./logger');
 const config = require('./config');
 const sessionAuth = require('../adapters/openapi-generator/sessionAuth');
+const realtimeGateway = require('../adapters/openapi-generator/realtimeGateway');
 
 class ExpressServer {
   constructor(port, openApiYaml) {
@@ -82,14 +83,49 @@ class ExpressServer {
       });
     });
 
-    http.createServer(this.app).listen(this.port);
+    // Stored so close() can shut the same instance down deterministically;
+    // previously this was discarded, so close() silently did nothing.
+    this.server = http.createServer(this.app).listen(this.port);
+    // Report the actual bound port, not just the requested one: requesting
+    // port 0 (as tests do, to avoid hard-coded-port conflicts) lets the OS
+    // assign a free port, which this.port alone would not reflect.
+    this.port = this.server.address().port;
+    // Shares this HTTP server/port instead of starting a second, unrelated
+    // server; the WebSocket path is configurable (WS_PATH env var, default
+    // /ws) rather than hard-coded. See adapters/openapi-generator/realtimeGateway.
+    this.realtimeGateway = realtimeGateway.attach(this.server);
     console.log(`Listening on port ${this.port}`);
   }
 
   async close() {
+    // Each resource is closed independently, and a failure in one must never
+    // skip closing the other: previously, a realtimeGateway.close() rejection
+    // would propagate immediately and leave this.server open forever. Errors
+    // are collected and re-thrown only after both close attempts have run, so
+    // the caller (index.js's shutdown handler) can still log and exit
+    // non-zero on failure while resource closure stays deterministic.
+    const errors = [];
+    if (this.realtimeGateway !== undefined) {
+      try {
+        await this.realtimeGateway.close();
+      } catch (error) {
+        errors.push(error);
+      }
+      this.realtimeGateway = undefined;
+    }
     if (this.server !== undefined) {
-      await this.server.close();
-      console.log(`Server on port ${this.port} shut down`);
+      try {
+        await new Promise((resolve, reject) => {
+          this.server.close((error) => (error ? reject(error) : resolve()));
+        });
+        console.log(`Server on port ${this.port} shut down`);
+      } catch (error) {
+        errors.push(error);
+      }
+      this.server = undefined;
+    }
+    if (errors.length > 0) {
+      throw errors[0];
     }
   }
 }

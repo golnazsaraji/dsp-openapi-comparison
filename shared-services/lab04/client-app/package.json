@@ -1,0 +1,22 @@
+{
+  "name": "lab04-client-app",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Project-owned Lab04 React client (adapted from, but not copied from, the professor reference under ../lab04-solution-main/client). Adds the Lab04 WebSocket integration: Online page, sidebar, and Films-to-Review active-film selection.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.2",
+    "vite": "^5.4.8",
+    "vitest": "^2.1.2"
+  }
+}

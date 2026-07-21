@@ -32,3 +32,15 @@ The message shape is documented by `schemas/ws_message_schema.json`.
 ## Runtime Boundary
 
 The final project keeps the WebSocket message contract and reusable client/server helpers here. The generated REST server does not currently start the `ws` server automatically; it can be wired by creating the server with `createStatusWebSocketServer(httpServer, () => FilmManagerService.webSocketSnapshot())` and broadcasting the messages returned by `FilmManagerService.webSocketStatusMessage(...)` after login, active-film selection, and logout.
+
+## Canonical schema note
+
+The Lab04 realtime implementation actually wired into the running server
+(`shared-services/src/realtime/`, `adapters/openapi-generator/realtimeGateway.js`) loads its schema from
+`specifications/lab04/schemas/ws_message_schema.json`, **not** from `schemas/ws_message_schema.json` in
+this directory. `schemas/ws_message_schema.json` here is kept only as a synchronized reference copy
+alongside the rest of this directory's design artifacts (`client/`, `server/`, `examples/`), which are
+themselves not wired into the running server (see `docs/lab04-compliance-audit.md` §1 for why). It is not
+a second source of truth: `scripts/lab04-schema-tests.js` asserts the two files are byte-for-byte
+identical on every `npm run test:lab04` run, so any drift between them fails the test suite immediately
+rather than silently diverging.

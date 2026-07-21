@@ -1,11 +1,19 @@
 
 const bcrypt = require('bcrypt');
 const { AsyncLocalStorage } = require('async_hooks');
+const { EventEmitter } = require('events');
 const { isStrictCalendarDate } = require('../validation/date');
 const ImageService = require('../images/ImageService');
 
-class FilmManagerService {
+// FilmManagerService emits 'login' / 'update' / 'logout' domain events with
+// ready-to-broadcast WebSocket message payloads (see webSocketStatusMessage).
+// This class never imports `ws` or knows about sockets: the realtime
+// transport layer (shared-services/src/realtime) subscribes to these events
+// instead, keeping the service transport-agnostic and unit-testable without a
+// real WebSocket connection.
+class FilmManagerService extends EventEmitter {
     constructor(options = {}) {
+        super();
         this.users = [
             { id: 1, name: 'Alice', email: 'alice@example.com', passwordHash: bcrypt.hashSync('password', 10) },
             { id: 2, name: 'Frank', email: 'frank@example.com', passwordHash: bcrypt.hashSync('password', 10) },
@@ -32,7 +40,13 @@ class FilmManagerService {
         this.requestIdentity = new AsyncLocalStorage();
         this.fallbackUserId = null;
         this.allowedImageMediaTypes = new Set(['image/png', 'image/jpg', 'image/jpeg', 'image/gif']);
-        this.loggedInUserIds = new Set();
+        // Session-identity-safe presence: Map<sessionId, userId> is the source
+        // of truth; Map<userId, Set<sessionId>> is a derived, kept-in-sync
+        // per-user view (used for isUserOnline / webSocketSnapshot). Neither
+        // map's keys are ever exposed over REST or WebSocket (see
+        // webSocketStatusMessage / isUserOnline) — only userId is.
+        this.userIdBySessionId = new Map();
+        this.sessionIdsByUserId = new Map();
     }
 
     get currentUserId() {
@@ -94,12 +108,78 @@ focused.
         return user;
     }
 
-    recordLogin(userId) {
-        this.loggedInUserIds.add(Number(userId));
+    isUserOnline(userId) {
+        const sessions = this.sessionIdsByUserId.get(Number(userId));
+        return !!sessions && sessions.size > 0;
     }
 
-    recordLogout(userId) {
-        this.loggedInUserIds.delete(Number(userId));
+    _addSession(userId, sessionId) {
+        this.userIdBySessionId.set(sessionId, userId);
+        let sessions = this.sessionIdsByUserId.get(userId);
+        if (!sessions) {
+            sessions = new Set();
+            this.sessionIdsByUserId.set(userId, sessions);
+        }
+        sessions.add(sessionId);
+    }
+
+    _removeSession(userId, sessionId) {
+        this.userIdBySessionId.delete(sessionId);
+        const sessions = this.sessionIdsByUserId.get(userId);
+        if (!sessions) return;
+        sessions.delete(sessionId);
+        if (sessions.size === 0) this.sessionIdsByUserId.delete(userId);
+    }
+
+    // sessionId must be the real, request-scoped session identity (Express's
+    // request.sessionID — see adapters/openapi-generator/sessionAuth.js). A
+    // failed login never reaches this method (sessionAuth.js only calls it
+    // inside the passport.authenticate success handler), so a rejected login
+    // never registers a session.
+    //
+    // previousSessionId (optional) is the session id the request *arrived
+    // with*, captured before passport's login-time regeneration. Passport
+    // regenerates the session (and its id) on every successful login as
+    // session-fixation protection, so a client resubmitting a login while
+    // already holding a session cookie tracked for this same user would
+    // otherwise always look like an unrelated brand-new session. When
+    // previousSessionId already maps to this userId, this call is treated as
+    // a continuation of that existing session (the tracked id is swapped,
+    // not duplicated) rather than a second live session.
+    recordLogin(userId, sessionId, previousSessionId) {
+        if (sessionId === undefined || sessionId === null) {
+            throw new Error('recordLogin requires a real session id.');
+        }
+        const id = Number(userId);
+
+        if (previousSessionId !== undefined && this.userIdBySessionId.get(previousSessionId) === id) {
+            this._removeSession(id, previousSessionId);
+            this._addSession(id, sessionId);
+            return;
+        }
+
+        const wasOnline = this.isUserOnline(id);
+        // _addSession is idempotent for an already-tracked sessionId (Set/Map
+        // overwritten with the same value), so a repeated login using the
+        // literal same session id is a no-op beyond this point.
+        this._addSession(id, sessionId);
+        if (!wasOnline) {
+            const message = this.webSocketStatusMessage(id, 'login');
+            if (message) this.emit('login', message);
+        }
+    }
+
+    // Removes only the given session id. Logging out from a session id that
+    // was never registered, or that belongs to a different user, is a
+    // deliberate no-op — it must never remove a *different*, still-live
+    // session for the same or another user.
+    recordLogout(userId, sessionId) {
+        const id = Number(userId);
+        if (this.userIdBySessionId.get(sessionId) !== id) return;
+        this._removeSession(id, sessionId);
+        if (!this.isUserOnline(id)) {
+            this.emit('logout', { typeMessage: 'logout', userId: id });
+        }
     }
 
     film(id) {
@@ -226,11 +306,19 @@ focused.
         return this.healthGET();
     }
 
+    // NOTE: this generated-interface login/logout pair is not on the real HTTP
+    // path — adapters/openapi-generator/sessionAuth.js registers /api/sessions
+    // directly on the Express app, before OpenApiValidator, so it shadows the
+    // generated SessionsController for the same routes. There is no real
+    // Express request/session available here, so a fixed per-user key is used
+    // instead of a real session id; this reproduces the same idempotent-login/
+    // guaranteed-logout behavior this dead path already had prior to real
+    // session-id tracking, without fabricating a fake "real" session id.
     async sessionsPOST(loginRequest = {}) {
         const user = await this.verifyCredentials(loginRequest.email, loginRequest.password);
         if (!user) throw this.error('Invalid email or password.', 401);
         this.currentUserId = user.id;
-        this.recordLogin(user.id);
+        this.recordLogin(user.id, `sessionless:${user.id}`);
         return this.user(user.id);
     }
 
@@ -241,7 +329,7 @@ focused.
 
     sessionsCurrentDELETE() {
         this.requireUser();
-        this.recordLogout(this.currentUserId);
+        this.recordLogout(this.currentUserId, `sessionless:${this.currentUserId}`);
         this.currentUserId = null;
         return null;
     }
@@ -259,7 +347,8 @@ focused.
     }
 
     usersOnlineGET() {
-        return this.users.filter((user) => this.loggedInUserIds.has(user.id)).map((user) => {
+        this.requireUser();
+        return this.users.filter((user) => this.isUserOnline(user.id)).map((user) => {
             const activeReview = this.reviews.find((review) => review.reviewerId === user.id && review.active);
             const activeFilm = activeReview && this.film(activeReview.filmId);
             return {
@@ -291,8 +380,22 @@ focused.
         };
     }
 
+    // Guards against emitting a malformed 'update' event: webSocketStatusMessage
+    // only returns null/undefined for a userId that doesn't resolve to a real
+    // user, which should not happen for these authenticated call sites, but
+    // this keeps a defensive boundary between service-level bugs and the
+    // realtime transport layer's schema validation.
+    emitUpdateFor(userId) {
+        const message = this.webSocketStatusMessage(userId, 'update');
+        if (message) this.emit('update', message);
+    }
+
     webSocketSnapshot() {
-        return [...this.loggedInUserIds]
+        // Deterministic ordering (ascending numeric userId) so the initial
+        // snapshot a newly-connected WebSocket client receives is stable and
+        // testable, independent of Map insertion/session order.
+        return [...this.sessionIdsByUserId.keys()]
+            .sort((left, right) => left - right)
             .map((userId) => this.webSocketStatusMessage(userId, 'login'))
             .filter(Boolean);
     }
@@ -463,9 +566,19 @@ focused.
         if (!film) throw this.error('Film not found.', 404);
         if (film.ownerId !== userId) throw this.error('Only the owner can delete this film.', 403);
         const deletedWasPublic = film.public;
+        // Deleting the film removes every review for it, silently clearing any
+        // reviewer's active-film state. Capture who was affected before the
+        // reviews disappear, so already-connected WebSocket clients are told
+        // about the now-cleared state instead of being left with stale data.
+        const affectedReviewerIds = this.reviews
+            .filter((review) => review.filmId === film.id && review.active)
+            .map((review) => review.reviewerId);
         this.imageService.deleteByFilm(film.id);
         this.films = this.films.filter((item) => item.id !== film.id);
         this.reviews = this.reviews.filter((review) => review.filmId !== film.id);
+        affectedReviewerIds.forEach((reviewerId) => {
+            this.emitUpdateFor(reviewerId);
+        });
         if (deletedWasPublic) return { mqtt: this.mqttFilmMessage(film.id, true) };
         return true;
     }
@@ -511,7 +624,11 @@ focused.
         const review = this.reviews.find((item) => item.filmId === Number(filmId) && item.reviewerId === Number(reviewerId));
         if (!review) throw this.error('Invitation not found.', 404);
         if (review.completed) throw this.error('Completed reviews cannot be removed.', 409);
+        const wasActive = review.active;
         this.reviews = this.reviews.filter((item) => item !== review);
+        // Removing an active invitation silently clears that reviewer's active
+        // film; tell already-connected clients so they never hold stale state.
+        if (wasActive) this.emitUpdateFor(review.reviewerId);
         return true;
     }
 
@@ -546,21 +663,21 @@ focused.
     }
 
     filmsFilmIdActivePUT(filmId) {
+        const userId = this.requireUser();
         const film = this.film(filmId);
         if (!film?.public) throw this.error('Public film not found.', 404);
-        if (!this.isReviewer(this.currentUserId, film.id)) throw this.error('The user is not a reviewer for this film.', 403);
-        const conflicting = this.reviews.find((review) => (
-            review.filmId === film.id && review.active && review.reviewerId !== this.currentUserId
-        ));
-        if (conflicting) throw this.error('The film is already active for another user.', 409);
+        if (!this.isReviewer(userId, film.id)) throw this.error('The user is not a reviewer for this film.', 403);
+        // Lab04 only requires "at most one active film per user". A film being
+        // already active for a *different* reviewer is not a conflict: two
+        // reviewers may independently have the same film active at once.
         const changedFilmIds = new Set();
         this.reviews.forEach((review) => {
-            if (review.reviewerId === this.currentUserId && review.active) {
+            if (review.reviewerId === userId && review.active) {
                 review.active = false;
                 changedFilmIds.add(review.filmId);
             }
         });
-        const review = this.reviews.find((item) => item.filmId === film.id && item.reviewerId === this.currentUserId);
+        const review = this.reviews.find((item) => item.filmId === film.id && item.reviewerId === userId);
         review.active = true;
         changedFilmIds.add(film.id);
         const dto = this.reviewDto(review);
@@ -568,17 +685,23 @@ focused.
             filmId: changedFilmId,
             message: this.mqttFilmMessage(changedFilmId),
         }));
+        // Emitted only after the mutation above has fully committed, so a
+        // WebSocket client can never observe an update that was not actually
+        // applied to the domain state.
+        this.emitUpdateFor(userId);
         return dto;
     }
 
     usersCurrentActiveFilmDELETE() {
+        const userId = this.requireUser();
         const changedFilmIds = new Set();
         this.reviews.forEach((review) => {
-            if (review.reviewerId === this.currentUserId && review.active) {
+            if (review.reviewerId === userId && review.active) {
                 review.active = false;
                 changedFilmIds.add(review.filmId);
             }
         });
+        this.emitUpdateFor(userId);
         return {
             mqtt: [...changedFilmIds].map((filmId) => ({
                 filmId,

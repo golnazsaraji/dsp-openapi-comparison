@@ -41,20 +41,41 @@ function configureSessionAuthentication(app) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  app.post('/api/sessions', passport.authenticate('local'), (request, response) => {
-    FilmManagerService.recordLogin(request.user.id);
-    response.status(200).json(publicUser(request.user));
-  });
+  app.post(
+    '/api/sessions',
+    (request, response, next) => {
+      // Passport regenerates the session (and its id) on every successful
+      // login as session-fixation protection, so the id read *after*
+      // authenticate() is always different from the one this request
+      // arrived with. Capturing it here, before that regeneration, lets
+      // FilmManagerService.recordLogin recognize a same-cookie repeat login
+      // as a continuation of the existing tracked session rather than an
+      // unrelated new one.
+      request.incomingSessionId = request.sessionID;
+      next();
+    },
+    passport.authenticate('local'),
+    (request, response) => {
+      // A failed authenticate() call never reaches this handler, so a
+      // rejected login never registers a session.
+      FilmManagerService.recordLogin(request.user.id, request.sessionID, request.incomingSessionId);
+      response.status(200).json(publicUser(request.user));
+    },
+  );
   app.get('/api/sessions/current', requireAuthentication, (request, response) => {
     response.status(200).json(publicUser(request.user));
   });
   app.delete('/api/sessions/current', requireAuthentication, (request, response, next) => {
     const userId = request.user.id;
+    // Captured before logout()/session.destroy() run, since those mutate
+    // request.session — request.sessionID itself remains the id this
+    // request's session was tracked under.
+    const sessionId = request.sessionID;
     request.logout((logoutError) => {
       if (logoutError) return next(logoutError);
       return request.session.destroy((sessionError) => {
         if (sessionError) return next(sessionError);
-        FilmManagerService.recordLogout(userId);
+        FilmManagerService.recordLogout(userId, sessionId);
         response.clearCookie('connect.sid');
         return response.status(204).end();
       });

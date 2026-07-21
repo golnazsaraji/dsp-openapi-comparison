@@ -1,4 +1,6 @@
 node_modules/
+shared-services/lab04/client-app/dist/
+.vscode/
 .DS_Store
 .env
 *.zip
@@ -15,3 +17,4 @@ runtime-data/image-metadata.json.*.tmp
 /docs/lab03-compliance-audit.md
 /shared-services/lab02/lab02-solution-main/
 /shared-services/lab03/lab03-solution-main/
+/shared-services/lab04/lab04-solution-main/

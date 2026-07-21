@@ -872,12 +872,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
           description: Error response
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-          description: Error response
       security:
       - cookieAuth: []
       summary: Select a public review film as active
