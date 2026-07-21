@@ -4,6 +4,7 @@ node_modules/
 *.zip
 *.log
 shared-services/lab03/bin/
+shared-services/lab03/bin-test/
 runtime-data/uploaded_files/*
 !runtime-data/uploaded_files/.gitkeep
 runtime-data/image-metadata.json
@@ -11,4 +12,6 @@ runtime-data/image-metadata.json.*.tmp
 /docs/lab02-compliance-audit.md
 /docs/lab02-compliance-audit-verification.md
 /docs/lab02-final-compliance-audit.md
+/docs/lab03-compliance-audit.md
 /shared-services/lab02/lab02-solution-main/
+/shared-services/lab03/lab03-solution-main/
