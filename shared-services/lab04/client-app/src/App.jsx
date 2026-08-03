@@ -46,7 +46,7 @@ export default function App() {
                     </nav>
                     <Routes>
                         <Route path="/online" element={<OnlinePage onlineUsers={onlineUsers} />} />
-                        <Route path="/to-review" element={<FilmsToReviewPage />} />
+                        <Route path="/to-review" element={<FilmsToReviewPage currentUser={user} />} />
                         <Route path="*" element={<Navigate to="/online" replace />} />
                     </Routes>
                 </main>

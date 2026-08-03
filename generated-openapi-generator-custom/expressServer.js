@@ -13,6 +13,7 @@ const logger = require('./logger');
 const config = require('./config');
 const sessionAuth = require('../adapters/openapi-generator/sessionAuth');
 const realtimeGateway = require('../adapters/openapi-generator/realtimeGateway');
+const mqttGateway = require('../adapters/openapi-generator/mqttGateway');
 
 class ExpressServer {
   constructor(port, openApiYaml) {
@@ -94,14 +95,20 @@ class ExpressServer {
     // server; the WebSocket path is configurable (WS_PATH env var, default
     // /ws) rather than hard-coded. See adapters/openapi-generator/realtimeGateway.
     this.realtimeGateway = realtimeGateway.attach(this.server);
+    // MQTT connects independently of the HTTP server/port (a separate
+    // Mosquitto broker, see shared-services/lab05/broker/mosquitto.conf).
+    // mqtt.js's connect() is non-blocking and retries in the background, so a
+    // broker that is unreachable at startup never delays or hangs server
+    // launch. See adapters/openapi-generator/mqttGateway.
+    this.mqttGateway = mqttGateway.attach();
     console.log(`Listening on port ${this.port}`);
   }
 
   async close() {
     // Each resource is closed independently, and a failure in one must never
-    // skip closing the other: previously, a realtimeGateway.close() rejection
+    // skip closing the others: previously, a realtimeGateway.close() rejection
     // would propagate immediately and leave this.server open forever. Errors
-    // are collected and re-thrown only after both close attempts have run, so
+    // are collected and re-thrown only after every close attempt has run, so
     // the caller (index.js's shutdown handler) can still log and exit
     // non-zero on failure while resource closure stays deterministic.
     const errors = [];
@@ -112,6 +119,14 @@ class ExpressServer {
         errors.push(error);
       }
       this.realtimeGateway = undefined;
+    }
+    if (this.mqttGateway !== undefined) {
+      try {
+        await this.mqttGateway.close();
+      } catch (error) {
+        errors.push(error);
+      }
+      this.mqttGateway = undefined;
     }
     if (this.server !== undefined) {
       try {

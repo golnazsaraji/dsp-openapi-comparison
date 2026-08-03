@@ -872,6 +872,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
           description: Error response
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: The requested film is already active for a different user.
+            The requesting user's previous active film (if any) and the other user's
+            active selection are both left unchanged.
       security:
       - cookieAuth: []
       summary: Select a public review film as active
@@ -1692,23 +1700,6 @@ components:
       required:
       - typeMessage
       - userId
-      type: object
-    MqttFilmMessage:
-      properties:
-        status:
-          enum:
-          - active
-          - inactive
-          - deleted
-          type: string
-        userId:
-          nullable: true
-          type: integer
-        userName:
-          nullable: true
-          type: string
-      required:
-      - status
       type: object
     filmsFilmIdImagesPOST_request:
       properties:

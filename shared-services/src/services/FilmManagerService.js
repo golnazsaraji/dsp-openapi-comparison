@@ -417,10 +417,23 @@ focused.
     mqttInitialFilmMessages() {
         return this.films
             .filter((film) => film.public)
+            .sort((left, right) => left.id - right.id)
             .map((film) => ({
                 filmId: film.id,
                 message: this.mqttFilmMessage(film.id),
             }));
+    }
+
+    // Emits the Lab05 'filmStatusChanged' domain event for a still-existing
+    // film. Public films only — the MQTT gateway (shared-services/src/mqtt)
+    // is the sole subscriber and only ever publishes public-film status, per
+    // the Lab05 topic contract. Deletion publishes 'deleted' directly from
+    // the call site instead (the film/reviews no longer exist to recompute
+    // mqttFilmMessage from by the time deletion completes).
+    emitFilmStatusChanged(filmId) {
+        const film = this.film(filmId);
+        if (!film?.public) return;
+        this.emit('filmStatusChanged', { filmId: film.id, message: this.mqttFilmMessage(film.id) });
     }
 
     filmsPublicGET(page, limit) {
@@ -477,9 +490,11 @@ focused.
         };
         this.nextFilmId += 1;
         this.films.push(film);
-        const dto = this.filmDto(film);
-        if (film.public) dto.mqtt = this.mqttFilmMessage(film.id);
-        return dto;
+        // A newly created public film has no reviews yet, so it is always
+        // 'inactive'; a private film is never published (see Lab05 topic
+        // contract — only public films get a topic).
+        this.emitFilmStatusChanged(film.id);
+        return this.filmDto(film);
     }
 
     createFilm(filmInput) {
@@ -566,6 +581,7 @@ focused.
         if (!film) throw this.error('Film not found.', 404);
         if (film.ownerId !== userId) throw this.error('Only the owner can delete this film.', 403);
         const deletedWasPublic = film.public;
+        const deletedFilmId = film.id;
         // Deleting the film removes every review for it, silently clearing any
         // reviewer's active-film state. Capture who was affected before the
         // reviews disappear, so already-connected WebSocket clients are told
@@ -579,7 +595,10 @@ focused.
         affectedReviewerIds.forEach((reviewerId) => {
             this.emitUpdateFor(reviewerId);
         });
-        if (deletedWasPublic) return { mqtt: this.mqttFilmMessage(film.id, true) };
+        // The film is already gone at this point, so emitFilmStatusChanged
+        // (which looks films up by id) cannot be reused here; 'deleted' is
+        // published directly instead, exactly once, only for a public film.
+        if (deletedWasPublic) this.emit('filmStatusChanged', { filmId: deletedFilmId, message: { status: 'deleted' } });
         return true;
     }
 
@@ -627,8 +646,14 @@ focused.
         const wasActive = review.active;
         this.reviews = this.reviews.filter((item) => item !== review);
         // Removing an active invitation silently clears that reviewer's active
-        // film; tell already-connected clients so they never hold stale state.
+        // film; tell already-connected clients so they never hold stale data.
         if (wasActive) this.emitUpdateFor(review.reviewerId);
+        // Derived Lab05 consistency (not a separately listed PDF trigger): if the
+        // removed review was the film's one active review, the film-level MQTT
+        // state actually changed (active -> inactive) and must be republished.
+        // Only reachable when wasActive is true, because the exclusive-active
+        // invariant guarantees at most one active review per film.
+        if (wasActive && film.public) this.emitFilmStatusChanged(film.id);
         return true;
     }
 
@@ -667,47 +692,61 @@ focused.
         const film = this.film(filmId);
         if (!film?.public) throw this.error('Public film not found.', 404);
         if (!this.isReviewer(userId, film.id)) throw this.error('The user is not a reviewer for this film.', 403);
-        // Lab04 only requires "at most one active film per user". A film being
-        // already active for a *different* reviewer is not a conflict: two
-        // reviewers may independently have the same film active at once.
-        const changedFilmIds = new Set();
-        this.reviews.forEach((review) => {
-            if (review.reviewerId === userId && review.active) {
-                review.active = false;
-                changedFilmIds.add(review.filmId);
-            }
-        });
+
+        // Lab05 exclusivity invariant: a public film may be active for at most
+        // one user at a time. This check runs BEFORE any mutation below, so a
+        // failed selection can never clear the requesting user's previous
+        // active film, and never leaves partial state — conflict detection and
+        // mutation form one atomic, synchronous operation in this process.
+        const conflictingReview = this.reviews.find(
+            (item) => item.filmId === film.id && item.active && item.reviewerId !== userId,
+        );
+        if (conflictingReview) {
+            // Deliberately generic: never reveal which other user holds the
+            // film active in the REST conflict response.
+            throw this.error('This public film is already active for another user.', 409);
+        }
+
         const review = this.reviews.find((item) => item.filmId === film.id && item.reviewerId === userId);
-        review.active = true;
-        changedFilmIds.add(film.id);
-        const dto = this.reviewDto(review);
-        dto.mqtt = [...changedFilmIds].map((changedFilmId) => ({
-            filmId: changedFilmId,
-            message: this.mqttFilmMessage(changedFilmId),
-        }));
-        // Emitted only after the mutation above has fully committed, so a
-        // WebSocket client can never observe an update that was not actually
-        // applied to the domain state.
-        this.emitUpdateFor(userId);
-        return dto;
+        const previousActiveReview = this.reviews.find((item) => item.reviewerId === userId && item.active);
+        const alreadyActiveSameFilm = previousActiveReview?.filmId === film.id;
+
+        if (!alreadyActiveSameFilm) {
+            // At most one previous active review per user (invariant maintained
+            // by this same method), so at most one film becomes inactive here.
+            if (previousActiveReview) previousActiveReview.active = false;
+            review.active = true;
+            // Deterministic order for replacing A with B: state already
+            // committed above, then A inactive, then B active.
+            if (previousActiveReview) this.emitFilmStatusChanged(previousActiveReview.filmId);
+            this.emitFilmStatusChanged(film.id);
+            // The authoritative specifications/lab04/material/Lab04.pdf lists
+            // exactly three WebSocket broadcast triggers: "logged in",
+            // "selects a NEW film", and "logged out" (see
+            // docs/lab04-compliance-audit.md, row L18b). Selecting the same
+            // film already active for this user is therefore not a broadcast
+            // trigger either: emitUpdateFor here would recompute and rebroadcast
+            // a byte-identical message no connected client's state would
+            // change from, so it is scoped inside this branch, not called
+            // unconditionally below.
+            this.emitUpdateFor(userId);
+        }
+        // Selecting the same film already active for the same user is fully
+        // idempotent: no domain mutation, no MQTT republish, no WebSocket update.
+        return this.reviewDto(review);
     }
 
     usersCurrentActiveFilmDELETE() {
         const userId = this.requireUser();
-        const changedFilmIds = new Set();
-        this.reviews.forEach((review) => {
-            if (review.reviewerId === userId && review.active) {
-                review.active = false;
-                changedFilmIds.add(review.filmId);
-            }
-        });
+        // At most one active review per user (invariant maintained by
+        // filmsFilmIdActivePUT), so at most one film is affected here.
+        const activeReview = this.reviews.find((review) => review.reviewerId === userId && review.active);
+        if (activeReview) {
+            activeReview.active = false;
+            this.emitFilmStatusChanged(activeReview.filmId);
+        }
         this.emitUpdateFor(userId);
-        return {
-            mqtt: [...changedFilmIds].map((filmId) => ({
-                filmId,
-                message: this.mqttFilmMessage(filmId),
-            })),
-        };
+        return null;
     }
 
     filmsFilmIdImagesGET(filmId) {

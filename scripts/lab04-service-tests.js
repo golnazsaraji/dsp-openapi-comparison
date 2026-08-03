@@ -1,8 +1,15 @@
 // Direct FilmManagerService (no HTTP) coverage for Lab04: auth checks,
-// assigned/unassigned reviewer, one-active-film-per-user, the two-users-same-film
-// fix, deterministic snapshot ordering, multi-session-safe presence tracking,
-// and that broadcast events fire only for successful operations, including
+// assigned/unassigned reviewer, one-active-film-per-user, deterministic
+// snapshot ordering, multi-session-safe presence tracking, and that
+// broadcast events fire only for successful operations, including
 // active-state invalidation on invitation/film deletion.
+//
+// Section 4 below asserts the Lab05 cross-user exclusivity conflict (a
+// public film active for at most one user at a time, HTTP 409) rather than
+// the old Lab04-only rule ("two users may independently share the same
+// active film"), which Lab05 explicitly supersedes — see
+// shared-services/src/services/FilmManagerService.js#filmsFilmIdActivePUT
+// and scripts/lab05-service-tests.js for the full Lab05 exclusivity suite.
 const assert = require('assert');
 const service = require('../shared-services/src/services/FilmManagerService');
 
@@ -42,14 +49,18 @@ function status(action, expected, label) {
         "Frank's previous active film (1) must be deactivated",
     );
 
-    // --- 4. two different users MAY select the same film (the fixed exclusivity rule) ---
-    service.currentUserId = 3; // Karen: also invited for film 2 (seed data)
-    const karenActive2 = service.filmsFilmIdActivePUT(2);
-    assert.strictEqual(karenActive2.active, true, 'Karen can select film 2 even though Frank already has it active');
+    // --- 4. Lab05 cross-user exclusivity: a public film is active for at most one user at a time ---
+    service.currentUserId = 3; // Karen: also invited for film 2 (seed data), currently inactive there
+    status(() => service.filmsFilmIdActivePUT(2), 409, 'Karen selecting film 2 while Frank already has it active must be rejected (Lab05 exclusivity)');
     assert.strictEqual(
         service.reviews.find((review) => review.reviewerId === 2 && review.filmId === 2).active,
         true,
-        "Frank's active film 2 must be unaffected by Karen selecting the same film",
+        "Frank's active film 2 must be unaffected by Karen's failed conflicting selection",
+    );
+    assert.strictEqual(
+        service.reviews.find((review) => review.reviewerId === 3 && review.filmId === 2).active,
+        false,
+        "Karen's own state must remain unchanged (still inactive) after her failed selection",
     );
 
     // --- 5. deterministic snapshot ordering (ascending numeric userId), independent of login order ---
@@ -226,7 +237,7 @@ function status(action, expected, label) {
     }
 
     service.currentUserId = null;
-    console.log('Lab04 FilmManagerService tests passed (auth, reviewer assignment, exclusivity fix, snapshot ordering, multi-session presence, broadcast success/failure gating, active-state invalidation).');
+    console.log('Lab04 FilmManagerService tests passed (auth, reviewer assignment, Lab05 cross-user exclusivity conflict, snapshot ordering, multi-session presence, broadcast success/failure gating, active-state invalidation).');
 })().catch((error) => {
     console.error(error);
     process.exitCode = 1;

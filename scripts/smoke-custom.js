@@ -191,8 +191,6 @@ async function main() {
     const response = await request('PUT', '/api/films/2/active');
     assertStatus(response, 200, 'PUT /api/films/2/active');
     assert(response.data.active === true, 'selected review should be active');
-    assert(Array.isArray(response.data.mqtt), 'selected review should include MQTT status messages');
-    assert(response.data.mqtt.some((item) => item.filmId === 2 && item.message.status === 'active'), 'MQTT messages should mark film 2 active');
   });
 
   const createdFilm = await step('create public film', async () => {
@@ -274,11 +272,12 @@ async function main() {
     assertStatus(deletedImages, 404, `GET images for deleted film ${createdFilm.id}`);
   });
 
-  await step('two reviewers may independently select the same active film', async () => {
-    // Lab04 authoritative rule: at most one active film *per user*. A film
-    // already active for another reviewer is not a conflict — both Frank
-    // (from the 'select active film' step above) and Karen are invited
-    // reviewers for film 2 and may each have it active at the same time.
+  await step('a second reviewer selecting an already-active public film receives 409 (Lab05 exclusivity)', async () => {
+    // Lab05 rule: a public film may be active for at most one user at a
+    // time. Frank (from the 'select active film' step above) already has
+    // film 2 active; Karen is also an invited reviewer for film 2 (seed
+    // data) but is not currently active there, so her selection must be
+    // rejected, leaving both users' state unchanged.
     const login = await request('POST', '/api/sessions', {
       email: 'karen@example.com',
       password: 'password',
@@ -286,16 +285,15 @@ async function main() {
     assertStatus(login, [200, 201], 'POST /api/sessions as Karen');
 
     const selection = await request('PUT', '/api/films/2/active');
-    assertStatus(selection, 200, 'PUT /api/films/2/active as Karen');
-    assert(selection.data.active === true, "Karen's review for film 2 should become active");
-    assert(selection.data.reviewerId === 3, 'active review should belong to Karen');
+    assertStatus(selection, 409, 'PUT /api/films/2/active as Karen while Frank already has it active');
+    assert(typeof selection.data.error === 'string', '409 response should use the project error schema');
 
     const reviews = await request('GET', '/api/films/public/2/reviews');
     assertStatus(reviews, 200, 'GET /api/films/public/2/reviews');
     const frankReview = reviews.data.reviews.find((review) => review.reviewerId === 2);
     const karenReview = reviews.data.reviews.find((review) => review.reviewerId === 3);
-    assert(frankReview?.active === true, "Frank's active film must be unaffected by Karen's selection");
-    assert(karenReview?.active === true, "Karen's active film should be recorded");
+    assert(frankReview?.active === true, "Frank's active film must be unaffected by Karen's failed conflicting selection");
+    assert(karenReview?.active === false, "Karen's own state must remain unchanged (still inactive) after her failed selection");
   });
 
   await step('logout invalidates the session', async () => {

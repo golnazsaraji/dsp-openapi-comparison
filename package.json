@@ -19,6 +19,8 @@
     "test:lab03": "node scripts/lab03-protocol-tests.js && node scripts/lab03-client-robustness-tests.js && node scripts/lab03-server-concurrency-tests.js && node scripts/lab03-large-file-and-matrix-tests.js && node scripts/lab03-alpha-conversion-tests.js && node scripts/lab03-interoperability-tests.js",
     "test:lab04": "node scripts/lab04-schema-tests.js && node scripts/lab04-service-tests.js && node scripts/lab04-realtime-tests.js",
     "test:lab04:client": "cd shared-services/lab04/client-app && npm test && npm run build",
+    "test:lab05": "node scripts/lab05-schema-tests.js && node scripts/lab05-topic-tests.js && node scripts/lab05-service-tests.js && node scripts/lab05-mqtt-gateway-tests.js && node scripts/lab05-hygiene-tests.js && node scripts/lab05-integration-tests.js && node scripts/lab05-regeneration-tests.js",
+    "test:lab05:integration": "node scripts/lab05-mqtt-integration-tests.js",
     "converter:build": "cd shared-services/lab02/converter-java && ./mvnw test package",
     "converter:start": "cd shared-services/lab02/converter-java && ./mvnw exec:java",
     "smoke": "node scripts/smoke-custom.js",
@@ -34,6 +36,7 @@
     "ajv-formats": "^3.0.1",
     "bcrypt": "^6.0.0",
     "express-session": "^1.18.2",
+    "mqtt": "^5.10.4",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "ws": "^8.18.0"

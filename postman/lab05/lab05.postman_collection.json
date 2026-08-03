@@ -1,0 +1,377 @@
+{
+  "info": {
+    "_postman_id": "9c3a2f10-4b6e-4a1d-8f2e-lab05exclusive",
+    "name": "DSP Film Manager — Lab05",
+    "description": "Manual REST verification for the Lab05 exclusive active-film selection surface (owner/reviewer setup, login, films-to-review, select/idempotent-reselect/replace/clear active film, second-user 409 conflict and its body/side-effect guarantees, authorization/validation, public/private film creation and deletion, logout). This collection exercises REST endpoints only, over a single shared Postman cookie jar (matching postman/lab04/lab04.postman_collection.json's convention: log in as one user, act, log out, log in as the next). It does NOT verify: retained MQTT delivery, late-subscriber behavior, QoS, broker restart/reconnect, MQTT gateway cleanup, true simultaneous concurrency, or WebSocket/MQTT cross-transport delivery — those are covered exclusively by the automated Node test suites (npm run test:lab05 and npm run test:lab05:integration, the latter against a real local Mosquitto broker). To manually observe the MQTT channel as a supplemental check, connect any MQTT client to a broker at mqtt://127.0.0.1:1883 (see shared-services/lab05/broker/mosquitto.conf) and subscribe to the numeric film-id topics used below while running these requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "aliceEmail", "value": "alice@example.com" },
+    { "key": "alicePassword", "value": "password" },
+    { "key": "frankEmail", "value": "frank@example.com" },
+    { "key": "frankPassword", "value": "password" },
+    { "key": "karenEmail", "value": "karen@example.com" },
+    { "key": "karenPassword", "value": "password" },
+    { "key": "filmIdShared", "value": "2" },
+    { "key": "filmIdFrankAndKaren", "value": "2" },
+    { "key": "filmIdKarensOwn", "value": "1" },
+    { "key": "filmIdMissing", "value": "999999" }
+  ],
+  "item": [
+    {
+      "name": "1. Setup (owner/reviewer wiring)",
+      "item": [
+        {
+          "name": "Clear stale Runner session",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Runner starts without an active session', () => pm.expect([204, 401]).to.include(pm.response.code));"
+          ] } }]
+        },
+        {
+          "name": "Login Alice (owner of film 1)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"{{aliceEmail}}\",\"password\":\"{{alicePassword}}\"}" },
+            "url": "{{baseUrl}}/api/sessions"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Alice login status is exactly 200', () => pm.response.to.have.status(200));",
+            "const user = pm.response.json();",
+            "pm.test('authenticated user is Alice', () => pm.expect(user.id).to.eql(1));"
+          ] } }]
+        },
+        {
+          "name": "Invite Karen to film 1 (idempotent: 201 first run, 409 on repeat Runner passes)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "[{\"reviewerId\": 3}]" },
+            "url": "{{baseUrl}}/api/films/{{filmIdKarensOwn}}/reviews"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('invitation status is 201 (created) or 409 (already exists from a previous Runner pass)', () => pm.expect([201, 409]).to.include(pm.response.code));",
+            "console.log('This makes the collection safely re-runnable: Karen only needs to be invited to film 1 once, ever.');"
+          ] } }]
+        },
+        {
+          "name": "Logout Alice",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Alice logout status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "2. Login and Films to Review (Frank)",
+      "item": [
+        {
+          "name": "Login Frank",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"{{frankEmail}}\",\"password\":\"{{frankPassword}}\"}" },
+            "url": "{{baseUrl}}/api/sessions"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Frank login status is exactly 200', () => pm.response.to.have.status(200));",
+            "const user = pm.response.json();",
+            "pm.test('authenticated user is Frank', () => { pm.expect(user.id).to.eql(2); pm.expect(user.email).to.eql('frank@example.com'); });",
+            "pm.test('session cookie exists after login', () => pm.expect(pm.cookies.has('connect.sid'), 'Missing connect.sid: enable the Postman cookie jar for this run').to.eql(true));"
+          ] } }]
+        },
+        {
+          "name": "List films to review",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/films/to-review" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('films-to-review status is 200', () => pm.response.to.have.status(200));",
+            "const page = pm.response.json();",
+            "pm.test('response is a paginated film collection', () => pm.expect(page).to.include.key('films'));",
+            "const filmIds = (page.films || []).map(film => String(film.id));",
+            "pm.test('Frank is assigned to the shared film', () => pm.expect(filmIds).to.include(pm.collectionVariables.get('filmIdShared')));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "3. Select Active Film and Idempotent Reselect (Frank)",
+      "item": [
+        {
+          "name": "Frank selects the shared film as active",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdShared}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('select active status is 200', () => pm.response.to.have.status(200));",
+            "const review = pm.response.json();",
+            "pm.test('review is now active for the shared film', () => { pm.expect(review.active).to.eql(true); pm.expect(String(review.filmId)).to.eql(pm.collectionVariables.get('filmIdShared')); pm.expect(review.reviewerId).to.eql(2); });"
+          ] } }]
+        },
+        {
+          "name": "Frank reselects the SAME film (idempotent — still 200, not an error)",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdShared}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('idempotent reselect status is 200 (not 409 — a user re-selecting their OWN already-active film is not a conflict)', () => pm.response.to.have.status(200));",
+            "const review = pm.response.json();",
+            "pm.test('review remains active for the shared film', () => { pm.expect(review.active).to.eql(true); pm.expect(String(review.filmId)).to.eql(pm.collectionVariables.get('filmIdShared')); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "4. Second-User Conflict (Karen)",
+      "item": [
+        {
+          "name": "Login Karen",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"{{karenEmail}}\",\"password\":\"{{karenPassword}}\"}" },
+            "url": "{{baseUrl}}/api/sessions"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Karen login status is exactly 200', () => pm.response.to.have.status(200));",
+            "const user = pm.response.json(); pm.test('authenticated user is Karen', () => pm.expect(user.id).to.eql(3));"
+          ] } }]
+        },
+        {
+          "name": "Karen establishes her OWN active film first (film 1)",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdKarensOwn}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Karen selecting her own film status is 200', () => pm.response.to.have.status(200));",
+            "const review = pm.response.json();",
+            "pm.test(\"Karen's own review is now active\", () => { pm.expect(review.active).to.eql(true); pm.expect(review.reviewerId).to.eql(3); });",
+            "console.log('This establishes a distinct prior active film for Karen, so the conflict step below can prove it is left untouched.');"
+          ] } }]
+        },
+        {
+          "name": "Karen attempts the film Frank already has active -> 409",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdFrankAndKaren}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('conflicting selection returns exactly 409', () => pm.response.to.have.status(409));",
+            "const body = pm.response.json();",
+            "pm.test('409 body follows the project error convention ({ error: string })', () => pm.expect(body).to.have.property('error').that.is.a('string'));",
+            "pm.test(\"the 409 body must not name the current holder ('Frank')\", () => pm.expect(body.error.toLowerCase()).to.not.include('frank'));"
+          ] } }]
+        },
+        {
+          "name": "Verify the shared film is still active for Frank (public reviews)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/films/public/{{filmIdFrankAndKaren}}/reviews" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('public reviews status is 200', () => pm.response.to.have.status(200));",
+            "const page = pm.response.json();",
+            "const frankReview = (page.reviews || []).find(review => review.reviewerId === 2);",
+            "pm.test(\"Frank's active selection is unaffected by Karen's failed conflicting request\", () => { pm.expect(frankReview, 'Frank review not found').to.exist; pm.expect(frankReview.active).to.eql(true); });",
+            "const karenReviewOnSharedFilm = (page.reviews || []).find(review => review.reviewerId === 3);",
+            "pm.test(\"Karen's own state on the CONTESTED film remains unchanged (still inactive there)\", () => { pm.expect(karenReviewOnSharedFilm, 'Karen review not found').to.exist; pm.expect(karenReviewOnSharedFilm.active).to.eql(false); });"
+          ] } }]
+        },
+        {
+          "name": "Verify Karen's own previous film remains active",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/films/public/{{filmIdKarensOwn}}/reviews" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('public reviews status is 200', () => pm.response.to.have.status(200));",
+            "const page = pm.response.json();",
+            "const karenReview = (page.reviews || []).find(review => review.reviewerId === 3);",
+            "pm.test(\"Karen's previously-established active film remains active after her failed attempt elsewhere\", () => { pm.expect(karenReview, 'Karen review not found').to.exist; pm.expect(karenReview.active).to.eql(true); });"
+          ] } }]
+        },
+        {
+          "name": "Karen clears her active film (so folder 5 can freely reuse film 1)",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/users/current/active-film" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('clear active film status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        },
+        {
+          "name": "Logout Karen",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Karen logout status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "5. Replace and Clear Active Film (Frank)",
+      "item": [
+        {
+          "name": "Login Frank",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"{{frankEmail}}\",\"password\":\"{{frankPassword}}\"}" },
+            "url": "{{baseUrl}}/api/sessions"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Frank login status is exactly 200', () => pm.response.to.have.status(200));"
+          ] } }]
+        },
+        {
+          "name": "Frank replaces the shared film with film 1 (Karen no longer holds either)",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdKarensOwn}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('replacement selection status is 200', () => pm.response.to.have.status(200));",
+            "const review = pm.response.json();",
+            "pm.test('review is now active for film 1', () => { pm.expect(review.active).to.eql(true); pm.expect(String(review.filmId)).to.eql(pm.collectionVariables.get('filmIdKarensOwn')); });"
+          ] } }]
+        },
+        {
+          "name": "Verify the replaced (shared) film is now inactive",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/films/public/{{filmIdFrankAndKaren}}/reviews" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('public reviews status is 200', () => pm.response.to.have.status(200));",
+            "const page = pm.response.json();",
+            "const frankReview = (page.reviews || []).find(review => review.reviewerId === 2);",
+            "pm.test('the replaced film must no longer be active for Frank', () => { pm.expect(frankReview, 'Frank review not found').to.exist; pm.expect(frankReview.active).to.eql(false); });"
+          ] } }]
+        },
+        {
+          "name": "Clear active film",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/users/current/active-film" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('clear active film status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        },
+        {
+          "name": "Verify no active film remains for Frank",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/films/public/{{filmIdKarensOwn}}/reviews" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('public reviews status is 200', () => pm.response.to.have.status(200));",
+            "const page = pm.response.json();",
+            "const frankReview = (page.reviews || []).find(review => review.reviewerId === 2);",
+            "pm.test('Frank has no active film after clearing', () => { pm.expect(frankReview, 'Frank review not found').to.exist; pm.expect(frankReview.active).to.eql(false); });"
+          ] } }]
+        },
+        {
+          "name": "Logout Frank",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Frank logout status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "6. Authorization and Validation",
+      "item": [
+        {
+          "name": "Unauthenticated selection is rejected",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdShared}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('unauthenticated selection returns 401', () => pm.response.to.have.status(401));"
+          ] } }]
+        },
+        {
+          "name": "Login Alice (owner, not a reviewer of the shared film)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"{{aliceEmail}}\",\"password\":\"{{alicePassword}}\"}" },
+            "url": "{{baseUrl}}/api/sessions"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Alice login status is exactly 200', () => pm.response.to.have.status(200));"
+          ] } }]
+        },
+        {
+          "name": "Unassigned-reviewer selection is rejected",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdShared}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('unassigned reviewer selection returns 403 (not 409 — authorization takes precedence over the conflict check)', () => pm.response.to.have.status(403));"
+          ] } }]
+        },
+        {
+          "name": "Missing film selection is rejected",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdMissing}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('missing film selection returns 404', () => pm.response.to.have.status(404));"
+          ] } }]
+        },
+        {
+          "name": "Logout Alice",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Alice logout status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "7. Public/Private Film Creation and Deletion",
+      "item": [
+        {
+          "name": "Login Alice",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"{{aliceEmail}}\",\"password\":\"{{alicePassword}}\"}" },
+            "url": "{{baseUrl}}/api/sessions"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Alice login status is exactly 200', () => pm.response.to.have.status(200));"
+          ] } }]
+        },
+        {
+          "name": "Create a public film (own topic; publishes retained 'inactive' over MQTT — not verified here)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"title\": \"Postman Public Film\", \"private\": false}" },
+            "url": "{{baseUrl}}/api/films"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('public film creation status is 201', () => pm.response.to.have.status(201));",
+            "const film = pm.response.json();",
+            "pm.test('created film is public and has an id', () => { pm.expect(film.private).to.eql(false); pm.expect(film.id).to.be.a('number'); });",
+            "pm.collectionVariables.set('createdPublicFilmId', String(film.id));"
+          ] } }]
+        },
+        {
+          "name": "Create a private film (never published over MQTT — no topic exists for it)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"title\": \"Postman Private Film\", \"private\": true}" },
+            "url": "{{baseUrl}}/api/films"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('private film creation status is 201', () => pm.response.to.have.status(201));",
+            "const film = pm.response.json();",
+            "pm.test('created film is private and has an id', () => { pm.expect(film.private).to.eql(true); pm.expect(film.id).to.be.a('number'); });",
+            "pm.collectionVariables.set('createdPrivateFilmId', String(film.id));"
+          ] } }]
+        },
+        {
+          "name": "Delete the created public film (isolated cleanup — never touches seed data)",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/films/{{createdPublicFilmId}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('public film deletion status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        },
+        {
+          "name": "Delete the created private film (isolated cleanup — never touches seed data)",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/films/{{createdPrivateFilmId}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('private film deletion status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        },
+        {
+          "name": "Verify deleted public film is gone",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/films/public/{{createdPublicFilmId}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('deleted film returns 404', () => pm.response.to.have.status(404));"
+          ] } }]
+        },
+        {
+          "name": "Logout Alice",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Alice logout status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        }
+      ]
+    }
+  ]
+}

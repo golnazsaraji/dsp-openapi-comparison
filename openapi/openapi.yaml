@@ -470,6 +470,15 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+        '409':
+          description: >-
+            The requested film is already active for a different user. The
+            requesting user's previous active film (if any) and the other
+            user's active selection are both left unchanged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/users/current/active-film:
     delete:
       tags: [films, realtime]
@@ -946,6 +955,15 @@ components:
         filmTitle:
           type: string
           nullable: true
+    # Lab05 MQTT film-status payloads are intentionally NOT modeled here.
+    # Unlike WebSocketStatusMessage above (which really is delivered over a
+    # REST-adjacent channel this document also describes), MQTT payloads are
+    # never sent or received over this REST API — they travel over a separate
+    # MQTT broker connection (see shared-services/lab05/README.md). Modeling
+    # them here would only produce an orphaned, unreferenced REST schema. The
+    # canonical, enforced MQTT payload contract is
+    # specifications/lab05/schemas/mqtt_film_message_schema.json, loaded by
+    # shared-services/src/mqtt/mqttFilmMessageValidator.js.
     WebSocketStatusMessage:
       type: object
       required: [typeMessage, userId]
@@ -961,18 +979,5 @@ components:
           type: integer
           nullable: true
         filmTitle:
-          type: string
-          nullable: true
-    MqttFilmMessage:
-      type: object
-      required: [status]
-      properties:
-        status:
-          type: string
-          enum: [active, inactive, deleted]
-        userId:
-          type: integer
-          nullable: true
-        userName:
           type: string
           nullable: true
