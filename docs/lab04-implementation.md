@@ -5,6 +5,11 @@ select one assigned public film as their active film, and every connected client
 immediately of login, active-film updates, and logout for every user, on top of Labs 01–03 without
 regressing any of them.
 
+**Current behavior note:** the active-film *exclusivity* rule described below is Lab04's
+original, per-user-only rule. Lab05 replaced it with a global exclusivity rule — see
+"Exclusivity rule" under **Corrected defects** below, and `docs/lab05-implementation.md`
+for the current MQTT-integrated behavior.
+
 ## Architecture
 
 - `openapi/openapi.yaml` already declared the Lab04 REST surface (`sessionsPOST`/`sessionsCurrentDELETE`
@@ -53,7 +58,15 @@ known, accepted scope boundary of the current single-process academic deployment
 
 - **Exclusivity rule.** The project's own prior implementation rejected selecting a film already active
   for a *different* reviewer. The Lab04 requirement is only "at most one active film per user"; the
-  cross-user conflict check was removed. Two reviewers may now independently have the same film active.
+  cross-user conflict check was removed, so at the end of Lab04, two reviewers could independently have
+  the same film active.
+  **Historical note — superseded by Lab05:** Lab05 reintroduced a cross-user exclusivity rule, this time
+  as a deliberate, documented requirement rather than a defect: `filmsFilmIdActivePUT` now rejects
+  selecting a public film that is already active for a *different* user with HTTP `409` (see
+  `shared-services/src/services/FilmManagerService.js`, the `conflictingReview` check). The current
+  behavior is therefore exclusive again — at most one reviewer may have a given public film active at a
+  time, project-wide. See `docs/lab05-implementation.md` for the full current rule and its MQTT
+  broadcast integration.
 - **Missing auth checks.** `usersOnlineGET`, `filmsFilmIdActivePUT`, and `usersCurrentActiveFilmDELETE`
   relied only on the OpenAPI-level `cookieAuth` security declaration; they now also call `requireUser()`
   directly, consistent with every other authenticated service method.

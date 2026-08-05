@@ -48,6 +48,8 @@ protocol bytes, and cleans up its own processes and temporary files — this is 
 byte-level proof of protocol correctness than an HTTP-based collection could ever provide for a binary
 socket protocol, faithful or not.
 
-See `docs/lab03-compliance-audit.md` for the full requirement-by-requirement evidence trail, and
-`shared-services/lab03/README.md` for the protocol reference, build/run instructions, and configuration
-properties.
+`docs/lab03-compliance-audit.md`, if present locally, has the full requirement-by-requirement
+evidence trail — it is a local working document excluded from git (`.gitignore`), not part of
+the tracked repository, so it will not exist in a fresh clone. See
+`shared-services/lab03/README.md` for the protocol reference, build/run instructions, and
+configuration properties.

@@ -1,9 +1,19 @@
 # Lab04 Compliance Audit — Realtime WebSocket Layer
 
-Branch: `review/lab04-compliance` (created via `git switch -c`, not committed — per the task's explicit
-instruction not to commit, merge, push, or open a PR during this work).
-Local-only document; not intended to remain tracked at final merge, consistent with the Lab02/Lab03
-workflow (removal happens at final-merge time, not during implementation).
+> **Historical audit state.** The text below (branch, "not committed", "local-only,
+> not intended to remain tracked") describes the state of this document *when it was
+> written*, on branch `review/lab04-compliance`, before that branch was merged.
+> **Current repository state:** this document is tracked in git and its Lab04 work has
+> since been merged into the project's main integration branch. It is kept as a
+> point-in-time audit record — read it alongside `docs/lab04-implementation.md` for
+> current behavior, and treat every git-state claim below as historical.
+
+Branch: `review/lab04-compliance` (created via `git switch -c`, not committed at the
+time of writing — per the task's explicit instruction not to commit, merge, push, or
+open a PR during that work).
+Local-only document at the time of writing; not intended to remain tracked at final
+merge, consistent with the Lab02/Lab03 workflow — see the historical-state note above
+for what actually happened.
 
 ---
 

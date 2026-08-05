@@ -1,5 +1,9 @@
 # Lab02 Phase 1 implementation
 
+> **Historical document.** This describes an intermediate development phase
+> of Lab02, superseded by later phases and merged work. For current Lab02
+> behavior, see [`../lab02-implementation.md`](../lab02-implementation.md).
+
 ## Scope
 
 Phase 1 implements strict uploads, durable metadata, owner/reviewer authorization, and complete registered-file cleanup. Binary image responses, gRPC conversion, and converted-image caching remain intentionally out of scope.

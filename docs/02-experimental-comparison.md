@@ -1,3 +1,13 @@
+# Experimental Comparison: Regeneration Behavior and Adapter Strategy
+
+This document records the experiments that established the project's
+regeneration-safe architecture: first testing SwaggerHub's generated stub,
+then observing what regeneration overwrites, then a post-generation patch
+script, and finally a symmetric adapter/patch strategy for both generators.
+`docs/03-openapi-generator-options-analysis.md` continues from here with the
+custom-template approach that ultimately replaced the patch scripts described
+below for the final OpenAPI Generator server
+(`generated-openapi-generator-custom/`).
 
 ## Runtime Experiment with the Generated Server Stub
 

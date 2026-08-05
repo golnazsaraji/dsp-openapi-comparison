@@ -1,5 +1,9 @@
 # Lab02 Phase 2 implementation
 
+> **Historical document.** This describes an intermediate development phase
+> of Lab02, superseded by later phases and merged work. For current Lab02
+> behavior, see [`../lab02-implementation.md`](../lab02-implementation.md).
+
 ## Scope
 
 Phase 2 adds source-image responses and HTTP content negotiation to Phase 1. It does not invoke gRPC or Java, convert representations, or create a conversion cache.

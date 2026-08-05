@@ -21,21 +21,15 @@ use another location; the upload directory is created automatically.
 
 ## Running
 
-From the repository root:
+`npm start` (from the repository root, or from inside this directory) only
+installs this directory's own dependencies and starts the already-generated
+server — it does **not** regenerate anything. Regenerate first if
+`../openapi/openapi.yaml` or a template in `../out/` changed:
 
 ```bash
-npm start
+npm run generate:final   # from the repository root; rebuilds this directory
+npm start                # from the repository root, or from inside this directory
 ```
-
-This regenerates this directory, installs its dependencies, and starts the server.
-
-To run this generated server directly after dependencies are installed:
-
-```bash
-npm start
-```
-
-from inside `generated-openapi-generator-custom/`.
 
 The server defaults to port `3000`. Override it with:
 

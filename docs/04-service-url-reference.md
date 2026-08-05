@@ -17,8 +17,10 @@ From the project root:
 npm start
 ```
 
-This regenerates `generated-openapi-generator-custom`, installs its dependencies, and
-leaves the generated server running.
+This installs `generated-openapi-generator-custom`'s dependencies and starts the
+already-generated server; it does **not** regenerate it. Run
+`npm run generate:final` first if `openapi/openapi.yaml` or a template in `out/`
+changed.
 
 Base URL:
 
@@ -76,8 +78,9 @@ curl http://localhost:3000/api/films/public
 
 ## Authenticated Services
 
-These endpoints require the `connect-sid` cookie. In the generated custom server, the
-login operation sets this cookie so the old check-regenerate-rerun workflow can be tested.
+These endpoints require the `connect.sid` session cookie (express-session's default
+cookie name; it is never overridden in `adapters/openapi-generator/sessionAuth.js`).
+The login operation sets this cookie.
 
 | Method | URL | Operation ID | Purpose |
 |---|---|---|---|
@@ -126,7 +129,7 @@ Expected result:
 
 - `GET /health` returns `{"status":"ok"}`
 - `GET /api/films/public` returns public films
-- `POST /api/sessions` returns the logged-in user and sets `connect-sid`
+- `POST /api/sessions` returns the logged-in user and sets `connect.sid`
 - `GET /api/films/to-review` returns Frank's review films
 - `PUT /api/films/2/active` returns the active review
 
@@ -215,7 +218,7 @@ runImageUpload = true
 Then select a local PNG, JPG, or GIF file in `Images / Upload image` before running the
 image requests.
 
-## One-Command Regeneration And Startup
+## One-Command Startup
 
 For the normal project workflow from the root:
 
@@ -225,9 +228,8 @@ npm start
 
 This command:
 
-- regenerates `generated-openapi-generator-custom`
 - installs dependencies for the generated custom server
-- starts the generated custom server
+- starts the generated custom server (without regenerating it — see the table below)
 - leaves the generated custom server running for Postman, Swagger UI, curl, or the smoke test
 
 By default it uses port `3000`. To run the server on another port:

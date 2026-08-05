@@ -45,4 +45,8 @@ npm run smoke
 npm run generate:final
 ```
 
-The phase documents remain as implementation history. This file describes the final cumulative project state.
+This file describes the final cumulative project state. The phase-by-phase
+development history is preserved in `docs/appendix/`:
+[Phase 1](appendix/lab02-phase1-implementation.md) (uploads and metadata),
+[Phase 2](appendix/lab02-phase2-implementation.md) (content negotiation),
+[Phase 3](appendix/lab02-phase3-implementation.md) (gRPC conversion).

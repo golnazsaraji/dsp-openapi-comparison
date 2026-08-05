@@ -8,14 +8,17 @@ From the repository root, regenerate when needed and start the final server on t
 
 ```bash
 npm run generate:final
-PORT=3101 npm start
+npm start
 ```
 
 Import the collection into Postman and confirm its collection variable is:
 
 ```text
-baseUrl = http://localhost:3101
+baseUrl = http://localhost:3000
 ```
+
+If the server is started on a different port (`PORT=3101 npm start`), update `baseUrl`
+to match before running the collection.
 
 ## State and cookies
 

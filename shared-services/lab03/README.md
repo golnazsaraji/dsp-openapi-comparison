@@ -4,6 +4,11 @@ This directory contains the Lab03 TCP/IP socket implementation artifacts for the
 concurrent image-conversion server and a command-line client, communicating over a raw TCP binary
 protocol (no HTTP/REST/OpenAPI involved — see `postman/lab03/README.md` for why Postman does not apply).
 
+This document cites `docs/lab03-compliance-audit.md` in several places below for supporting evidence.
+That file is a local working document excluded from git (`.gitignore`) and is not part of the tracked
+repository — it will not exist in a fresh clone. Where cited, treat it as optional supplementary
+evidence, not a required reference.
+
 ## Protocol
 
 The converter server listens on TCP port `2001` by default. Supported media types are exactly three:
@@ -46,7 +51,7 @@ server previously misreported as "No ImageIO writer available for JPG"); see
 `docs/lab03-compliance-audit.md`, "Post-audit defect: alpha-channel JPEG conversion," for the full root
 cause and fix.
 
-## Source Files
+## Source files
 
 | File | Meaning |
 |---|---|

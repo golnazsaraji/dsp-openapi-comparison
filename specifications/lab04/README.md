@@ -16,4 +16,8 @@ The final REST API operations that expose the online-user snapshot and active-fi
 ../../openapi/openapi.yaml
 ```
 
-The shared service keeps runtime helper code under `../../shared-services/lab04/`.
+The current, wired-in realtime implementation lives under
+`../../shared-services/src/realtime/` (server) and
+`../../shared-services/lab04/client-app/src/realtime/` (client) — see
+`../../shared-services/lab04/README.md` for the full file map, and
+`../../docs/lab04-implementation.md` for how it works.

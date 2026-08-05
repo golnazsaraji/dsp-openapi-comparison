@@ -1,5 +1,9 @@
 # Lab02 Phase 3 implementation
 
+> **Historical document.** This describes an intermediate development phase
+> of Lab02, superseded by later phases and merged work. For current Lab02
+> behavior, see [`../lab02-implementation.md`](../lab02-implementation.md).
+
 ## Protocol and Java service
 
 The sole proto source is `shared-services/lab02/proto/converter.proto`. The bidirectional RPC state machine requires exactly one metadata message first, one or more bounded source chunks, and client half-close. The server returns output chunks followed by one terminal result, or one structured failure.

@@ -1,5 +1,14 @@
 # Lab05 Compliance Audit (Phase 2, updated through Phase 3)
 
+> **Historical audit state.** Section 3 below ("zero Lab05 commits exist yet; all
+> Lab05 work is uncommitted working-tree state") describes the repository *at the
+> time this audit was written*, on branch `review/lab05-compliance`. **Current
+> repository state:** the Lab05 work was committed (`Implement Lab05 MQTT film
+> selection`) and merged into the project's main integration branch. This document
+> is kept as a point-in-time audit record — read it alongside
+> `docs/lab05-implementation.md` for current behavior, and treat every git-state
+> claim below as historical.
+
 This document supersedes the Phase 0 compliance matrix, which mixed
 sub-requirements and classifications inside single rows. Every row below is
 atomic: one requirement, one classification. Originally authored in Phase 2;
@@ -150,7 +159,7 @@ no matches).
 
 ## 8. Current project architecture
 
-```
+```text
 FilmManagerService (shared-services/src/services/FilmManagerService.js)
     emits 'filmStatusChanged' { filmId, message }  — semantic only, no MQTT options
         │

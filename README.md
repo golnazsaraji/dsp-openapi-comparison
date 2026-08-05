@@ -1,246 +1,202 @@
 # DSP OpenAPI Generator Comparison
 
-This repository is one final project for the DSP laboratory work. It compares generated Node.js server stubs while keeping the Film Manager business logic outside generated code, so the API layer can be regenerated without losing handwritten implementation.
+## 1. Project overview
 
-## Project Structure
+This is a DSP laboratory project. It compares generated Node.js server
+stubs — OpenAPI Generator vs. SwaggerHub / Swagger Codegen — while keeping
+all Film Manager business logic in a handwritten layer that survives
+regeneration. On top of that comparison, the project implements five
+labs (Lab01–Lab05) as successive features of one Film Manager API: schema
+validation and authentication, image upload/conversion over gRPC, a raw
+TCP image-conversion protocol, real-time WebSocket presence, and MQTT-based
+exclusive active-film selection.
 
-| Path | Meaning |
+## 2. Repository structure
+
+| Path | Contents |
 |---|---|
-| `openapi/` | OpenAPI specifications used by the project. |
-| `specifications/` | Evaluation-facing folders for Lab01-Lab05 specifications and course material. |
-| `shared-services/` | Shared handwritten Film Manager logic plus Lab01-Lab05 artifacts. |
-| `adapters/` | Adapter layer connecting generated services to `shared-services/`. |
-| `out/` | Customized OpenAPI Generator templates. |
-| `generated-openapi-generator/` | Initial generated server for the initial simple OpenAPI example. |
-| `generated-swaggerhub/` | Historical SwaggerHub / Swagger Codegen output kept for comparison. |
-| `generated-openapi-generator-custom/` | Disposable regenerated server using the customized templates. |
-| `runtime-data/uploaded_files/` | Persistent uploaded files kept outside the disposable generated server. |
-| `scripts/` | Smoke test and historical helper scripts. |
-| `postman/` | Postman collection for manual checks. |
-| `docs/` | Written comparison and implementation notes. |
+| `openapi/` | OpenAPI specifications (`initial-example.yaml`, `openapi.yaml`). |
+| `specifications/` | Course material and per-lab reference artifacts (`lab01/`–`lab05/`). |
+| `shared-services/` | Handwritten Film Manager logic (`src/`) plus per-lab artifacts (`lab02/` Java Converter, `lab03/` TCP client/server, `lab04/` client app and realtime code, `lab05/` MQTT broker config). |
+| `adapters/` | Regeneration-safe glue between generated services and `shared-services/`. |
+| `out/` | Customized OpenAPI Generator Mustache templates — the source of truth for the generated server. |
+| `generated-openapi-generator/` | Generated server for the initial simple example. |
+| `generated-openapi-generator-custom/` | Disposable generated server for the final Film Manager API. |
+| `generated-swaggerhub/` | Historical SwaggerHub / Swagger Codegen output, kept for comparison. |
+| `runtime-data/` | Persistent data outside the disposable generated server (uploaded files, image metadata). |
+| `scripts/` | Test suites and smoke-test scripts. |
+| `postman/` | Postman collections for manual and automated (Newman) checks. |
+| `docs/` | Written analysis, per-lab implementation docs, compliance audits, and configuration reference. See `docs/README.md` for the full index. |
 
-## Specifications
-
-The five laboratory specifications are organized as separate folders in:
+## 3. Architecture
 
 ```text
-specifications/
-```
-
-Each lab folder contains the course PDFs in `material/` plus the related JSON Schema, OpenAPI reference, Protocol Buffers, TCP protocol, WebSocket, or MQTT artifacts used by the project.
-
-The visible OpenAPI specifications are:
-
-| File | Purpose |
-|---|---|
-| `openapi/initial-example.yaml` | Initial simple Film API example used at the start of the comparison. |
-| `openapi/openapi.yaml` | Canonical Film Manager API used by the final project. |
-
-The initial simple example is complete:
-
-| Part | Location |
-|---|---|
-| OpenAPI specification | `openapi/initial-example.yaml` |
-| Generated OpenAPI Generator server | `generated-openapi-generator/` |
-| Handwritten service implementation | `shared-services/src/services/InitialFilmService.js` |
-| Adapter connecting generated code to handwritten code | `adapters/initial-example/DefaultServiceAdapter.js` |
-| Smoke test | `scripts/smoke-initial.js` |
-
-The canonical Film Manager contract includes session-based authentication, public film reads, owned-film CRUD, review invitations, review completion, the mandatory auto-invitation design endpoint, image metadata endpoints, active-film behavior, HATEOAS `self` links, paginated list responses, and explicit error responses.
-
-Lab01 Draft 7 JSON Schemas and valid JSON examples are stored in:
-
-```text
-specifications/lab01/
-```
-
-The final Lab01 mapping, authentication design, intentional in-memory storage decision, and verification commands are documented in `docs/06-lab01-synchronization.md`.
-
-Lab02 image-management notes and the gRPC converter contract are stored in:
-
-```text
-specifications/lab02/
-```
-
-The completed Lab02 architecture, runtime commands, validation suites, and cumulative
-Postman workflow are documented in `docs/lab02-implementation.md`.
-
-Lab03 TCP converter client/server sources and protocol notes are stored in:
-
-```text
-specifications/lab03/
-```
-
-Lab04 WebSocket course material, message schema, and examples are stored in:
-
-```text
-specifications/lab04/
-```
-
-Lab05 MQTT course material, message schema, examples, and Mosquitto configuration are stored in:
-
-```text
-specifications/lab05/
-```
-
-## Architecture
-
-```text
-OpenAPI specification
+OpenAPI specification (openapi/openapi.yaml)
         ↓
-Generated API layer
+Generated API layer (generated-openapi-generator-custom/, disposable)
         ↓
-Adapter layer
+Adapter layer (adapters/openapi-generator/, regeneration-safe)
         ↓
-Shared handwritten services
+Shared handwritten services (shared-services/src/, business logic)
 ```
 
-The generated folders are treated as artifacts. Handwritten behavior is kept in `shared-services/` and is reached through `adapters/`, which is the regeneration-safe part of the experiment.
+The generated layer is treated as a build artifact: `npm run generate:final`
+can delete and rebuild it at any time from `openapi/openapi.yaml` and the
+templates in `out/`. All persistent behavior — the Film Manager domain
+logic, the WebSocket presence gateway, and the MQTT gateway — lives in
+`shared-services/src/` and is reached through the thin adapter layer in
+`adapters/openapi-generator/`, so regeneration never loses handwritten code.
 
-## Requirements
+## 4. Prerequisites
 
-The normal project workflow uses Node.js for the generated API server and smoke tests,
-and Java for OpenAPI Generator. Use `npm run generate:final` when the specification or
-templates change; `npm start` starts the already-generated final server.
+| Tool | Version | Purpose |
+|---|---|---|
+| `git` | any recent version | clone and manage the repository |
+| Node.js + `npm` | 18 or newer | run the generated server, shared services, tests |
+| Java (JDK or JRE) | 17 or newer | build/run the Lab02 Converter (`shared-services/lab02/converter-java`, which targets Java 17 via `maven.compiler.release`); OpenAPI Generator CLI 7.22.0 itself only requires Java 11+ |
+| `@openapitools/openapi-generator-cli` | pinned to `7.22.0` in `openapitools.json` | regenerate the server |
+| Mosquitto | any recent version | optional MQTT broker for Lab05 |
 
-Required tools:
-
-| Purpose | Package or tool |
-|---|---|
-| Clone and manage the repository | `git` |
-| Run the generated server and smoke tests | Node.js 18 or newer, with `npm` |
-| Run OpenAPI Generator | Java 17 JDK or JRE |
-| Regenerate the server from `openapi/openapi.yaml` | `@openapitools/openapi-generator-cli` using OpenAPI Generator `7.22.0` |
-
-The project pins OpenAPI Generator version `7.22.0` in `openapitools.json`. Install the
-CLI globally if it is not already available:
+macOS:
 
 ```bash
+brew install git node openjdk@17 mosquitto
 npm install -g @openapitools/openapi-generator-cli
 ```
 
-### macOS
-
-```bash
-brew install git node openjdk@17
-npm install -g @openapitools/openapi-generator-cli
-```
-
-Optional Lab05 MQTT broker:
-
-```bash
-brew install mosquitto
-```
-
-### Ubuntu / Debian
+Ubuntu / Debian (use NodeSource or `nvm` instead if the distribution's
+Node.js package is older than 18):
 
 ```bash
 sudo apt update
-sudo apt install git nodejs npm openjdk-17-jdk
+sudo apt install git nodejs npm openjdk-17-jdk mosquitto
 npm install -g @openapitools/openapi-generator-cli
 ```
 
-Optional Lab05 MQTT broker:
+Fedora:
 
 ```bash
-sudo apt install mosquitto
-```
-
-If the distribution Node.js package is older than Node.js 18, use NodeSource, `nvm`, or
-the official Node.js installer instead.
-
-### Fedora
-
-```bash
-sudo dnf install git nodejs npm java-17-openjdk-devel
+sudo dnf install git nodejs npm java-17-openjdk-devel mosquitto
 npm install -g @openapitools/openapi-generator-cli
 ```
 
-Optional Lab05 MQTT broker:
-
-```bash
-sudo dnf install mosquitto
-```
-
-### Windows
-
-Using `winget`:
+Windows (`winget`):
 
 ```powershell
-winget install Git.Git
-winget install OpenJS.NodeJS.LTS
-winget install EclipseAdoptium.Temurin.17.JDK
+winget install Git.Git OpenJS.NodeJS.LTS EclipseAdoptium.Temurin.17.JDK EclipseMosquitto.Mosquitto
 npm install -g @openapitools/openapi-generator-cli
 ```
 
-Optional Lab05 MQTT broker:
+## 5. Installation
 
-```powershell
-winget install EclipseMosquitto.Mosquitto
+```bash
+npm install
+npm run generate:final
 ```
 
-The generated final server installs its own npm dependencies from
-`generated-openapi-generator-custom/package.json` when `npm start` is executed from the
-project root.
+`npm install` installs the root-level tooling (test scripts, smoke test).
+`npm run generate:final` builds `generated-openapi-generator-custom/` from
+`openapi/openapi.yaml` and `out/`; it does not install that directory's own
+dependencies — that happens automatically the first time it starts (see
+below).
 
-## Running
+## 6. Configuration
 
-Start the final Film Manager API from the project root:
+Every component runs with documented, local-development defaults and needs
+no configuration to start. See `docs/configuration.md` for the full
+environment-variable reference (server port, upload/storage paths, session
+secret, WebSocket path, gRPC Converter address/port, MQTT broker URL and
+credentials, React client build variable).
+
+## 7. Running
 
 ```bash
 npm start
 ```
 
-This runs `npm run start:final`: the generated package installs its dependencies through
-its existing `prestart` lifecycle and starts the already-generated server. It does not
-regenerate the server.
+Installs `generated-openapi-generator-custom/`'s own dependencies (via its
+`prestart` script) and starts the already-generated server on port `3000`.
+**This does not regenerate the server** — run `npm run generate:final`
+first if `openapi/openapi.yaml` or a template in `out/` changed.
 
-The `generated-openapi-generator-custom/` directory is disposable. Uploaded files persist
-under `runtime-data/uploaded_files/` by default. Set `UPLOAD_DIR` to use a different upload
-directory; the server creates the selected directory automatically.
-
-To regenerate the final server without starting it, for example after changing the OpenAPI
-contract or templates:
-
-```bash
-npm run generate:final
-```
-
-If port `3000` is busy:
+Override the port:
 
 ```bash
 PORT=3101 BASE_URL=http://localhost:3101 npm start
 ```
 
-In a second terminal, run the smoke test:
+To also exercise Lab02 (image conversion), Lab04 (WebSocket presence
+client), or Lab05 (MQTT broker and live client updates), see the full
+sequence in `docs/run-all-labs.md` — it covers starting the Java Converter,
+Mosquitto, and the React client alongside the server.
+
+To run the initial simple example instead of the final Film Manager API:
 
 ```bash
-npm test
-```
-
-The smoke test checks health, public reads, login/session behavior, paginated list responses, authenticated film CRUD, review invitation/removal, and active-film conflict handling.
-
-To run the initial simple example instead:
-
-```bash
-npm run start:initial
-```
-
-Then, in a second terminal:
-
-```bash
+npm run start:initial   # then, in a second terminal:
 npm run test:initial
 ```
 
-## Documentation
+## 8. Testing
 
-The main written analysis is in:
+```bash
+npm test          # Lab01 tests + smoke test
+npm run smoke      # smoke test only (server must already be running)
+```
 
-- `docs/01-swaggerhub-analysis.md`
-- `docs/02-experimental-comparison.md`
-- `docs/03-openapi-generator-options-analysis.md`
-- `docs/04-service-url-reference.md`
-- `docs/05-success-codes-and-upload-storage.md`
-- `docs/06-lab01-synchronization.md`
+Every lab also has its own dedicated test command:
 
-These documents explain the generator comparison, the regeneration-safe adapter approach, and the final custom-template workflow.
+| Command | Covers |
+|---|---|
+| `npm run test:lab01` | JSON Schema validation, service-layer unit tests |
+| `npm run test:lab02` | Image metadata service, Converter client |
+| `npm run test:lab02:integration` | Real gRPC round-trip against the Java Converter |
+| `npm run test:lab02:proto` | Protocol Buffers schema consistency |
+| `npm run test:lab03` | TCP protocol, client robustness, server concurrency, large-file/matrix conversion, alpha-channel handling, interoperability |
+| `npm run test:lab04` | WebSocket schema, service events, realtime gateway |
+| `npm run test:lab04:client` | React client unit tests and production build |
+| `npm run test:lab05` | MQTT schema, topics, service exclusivity logic, gateway, hygiene, in-process integration, regeneration safety |
+| `npm run test:lab05:integration` | Real MQTT round-trip against a running Mosquitto broker |
+
+`npm run test:lab02:integration` requires the Java Converter running
+(`npm run converter:build && npm run converter:start`);
+`npm run test:lab05:integration` requires Mosquitto running. See
+`docs/run-all-labs.md` for the full startup/shutdown sequence and the
+Postman/Newman commands.
+
+## 9. Labs overview
+
+| Lab | Adds | Current implementation doc |
+|---|---|---|
+| Lab01 | JSON Schema contract, session authentication, in-memory Film Manager domain | `docs/06-lab01-synchronization.md` |
+| Lab02 | Image upload, metadata storage, gRPC-based Java image converter | `docs/lab02-implementation.md` |
+| Lab03 | Raw TCP image-conversion protocol (client + concurrent server) | `shared-services/lab03/README.md` |
+| Lab04 | Real-time WebSocket presence and active-film notifications | `docs/lab04-implementation.md` |
+| Lab05 | MQTT-based exclusive active-film selection (supersedes Lab04's per-user rule with a global one; see `docs/lab04-implementation.md` for the current behavior) | `docs/lab05-implementation.md` |
+
+## 10. Documentation index
+
+See `docs/README.md` for the complete, categorized documentation index
+(getting started, architecture/comparison analysis, per-lab implementation
+docs, compliance audits, historical appendices, Postman guides). Start with:
+
+- `docs/run-all-labs.md` — canonical end-to-end startup/test sequence
+- `docs/configuration.md` — every environment variable
+- `docs/01-swaggerhub-analysis.md` through `docs/06-lab01-synchronization.md` — the generator-comparison analysis this project is built around
+
+## 11. Known limitations
+
+- All state (films, reviews, sessions, WebSocket presence, MQTT-tracked
+  active films) is held in memory in a single Node.js process and resets on
+  restart. There is no database and no persistence beyond uploaded files
+  and their metadata — an intentional academic simplification.
+- The design does not horizontally scale: WebSocket and MQTT state is
+  process-local, so running multiple server instances behind a load
+  balancer would desynchronize presence and active-film state.
+- The bundled Mosquitto configuration (`shared-services/lab05/broker/mosquitto.conf`)
+  allows anonymous connections and uses no TLS — local development only.
+- `SESSION_SECRET` defaults to a published, fixed development value and
+  must be overridden before any non-local deployment.
+- Postman/Newman collections verify HTTP-visible behavior only; they do not
+  exercise the WebSocket or MQTT channels directly. Automated tests under
+  `scripts/` cover those channels instead (see section 8).
