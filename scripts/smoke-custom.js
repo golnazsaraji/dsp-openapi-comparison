@@ -198,7 +198,7 @@ async function main() {
       title: 'Smoke Test Film',
       private: false,
     });
-    assertStatus(response, [200, 201], 'POST /api/films');
+    assertStatus(response, 201, 'POST /api/films');
     assert(response.data.title === 'Smoke Test Film', 'created film title should match');
     return response.data;
   });
@@ -211,6 +211,7 @@ async function main() {
       private: false,
     });
     assertStatus(response, 204, `PUT /api/films/${createdFilm.id}`);
+    assert(response.data === null, '204 update response must have an empty body');
   });
 
   await step('invite reviewer to created film', async () => {
@@ -259,12 +260,14 @@ async function main() {
 
   await step('remove review invitation', async () => {
     const response = await request('DELETE', `/api/films/${createdFilm.id}/reviews/3`);
-    assertStatus(response, [200, 204], `DELETE /api/films/${createdFilm.id}/reviews/3`);
+    assertStatus(response, 204, `DELETE /api/films/${createdFilm.id}/reviews/3`);
+    assert(response.data === null, '204 review-invitation deletion response must have an empty body');
   });
 
   await step('delete created film', async () => {
     const response = await request('DELETE', `/api/films/${createdFilm.id}`);
-    assertStatus(response, [200, 204], `DELETE /api/films/${createdFilm.id}`);
+    assertStatus(response, 204, `DELETE /api/films/${createdFilm.id}`);
+    assert(response.data === null, '204 film deletion response must have an empty body');
     assert(!fs.existsSync(uploadedFile), 'deleting a film should remove its stored image file');
     const deletedFilm = await request('GET', `/api/films/public/${createdFilm.id}`);
     assertStatus(deletedFilm, 404, `GET deleted film ${createdFilm.id}`);
