@@ -12,9 +12,9 @@ Lab02 extends the Film Manager service with image management for public films:
 | List image metadata for a public film owned by the user or assigned to the user for review. | `../../openapi/openapi.yaml`, `../src/services/FilmManagerService.js` |
 | Retrieve one image as JSON metadata or as image bytes depending on the `Accept` header. | `../../openapi/openapi.yaml` |
 | Delete an image from a public film owned by the current user. | `../../openapi/openapi.yaml`, `../src/services/FilmManagerService.js` |
-| Define the gRPC converter service contract. | `proto/converter.proto` |
+| Define and run the gRPC converter service contract. | `proto/converter.proto`, `converter-java/` |
 
-The Java converter server is external laboratory material. The final project keeps the `.proto` contract here and documents the client boundary, while the OpenAPI-generated server remains focused on the REST API and shared-service delegation experiment.
+The project contains an active handwritten Node client and a portable stateless Java Converter. The professor solution remains reference material and is not used at runtime.
 
 ## Supported Media Types
 

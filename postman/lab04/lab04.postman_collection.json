@@ -1,0 +1,203 @@
+{
+  "info": {
+    "_postman_id": "7eb71be1-3dc5-4fc7-b082-lab04realtime",
+    "name": "DSP Film Manager — Lab04",
+    "description": "Manual REST verification for the Lab04 active-film selection surface (login, films-to-review, online snapshot, select/replace active film, clear active film, authorization/validation, logout). This collection exercises REST endpoints only. It does NOT verify WebSocket broadcast delivery to multiple clients, reconnect behavior, or multi-session presence semantics — those are covered exclusively by the automated Node test suite (npm run test:lab04, specifically scripts/lab04-realtime-tests.js). To manually observe the realtime channel as a supplemental check, connect any WebSocket client to {{baseUrl}} with the scheme changed to ws:// and path /ws (e.g. ws://localhost:3000/ws) while running these requests — Postman's own request runner is not used for this, since a plain REST collection cannot assert broadcast/reconnect/multi-session behavior.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "frankEmail", "value": "frank@example.com" },
+    { "key": "frankPassword", "value": "password" },
+    { "key": "aliceEmail", "value": "alice@example.com" },
+    { "key": "alicePassword", "value": "password" },
+    { "key": "filmIdAssignedOne", "value": "1" },
+    { "key": "filmIdAssignedTwo", "value": "2" },
+    { "key": "filmIdPrivate", "value": "3" },
+    { "key": "filmIdMissing", "value": "999999" }
+  ],
+  "item": [
+    {
+      "name": "1. Setup and Session",
+      "item": [
+        {
+          "name": "Clear stale Runner session",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Runner starts without an active session', () => pm.expect([204, 401]).to.include(pm.response.code));",
+            "console.log('Initial session reset status:', pm.response.code, '- 204 means a stale session was cleared; 401 means the jar was already anonymous.');"
+          ] } }]
+        },
+        {
+          "name": "Login Frank (assigned reviewer)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"{{frankEmail}}\",\"password\":\"{{frankPassword}}\"}" },
+            "url": "{{baseUrl}}/api/sessions"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Frank login status is exactly 200', () => pm.response.to.have.status(200));",
+            "const user = pm.response.json();",
+            "pm.test('authenticated user is Frank', () => { pm.expect(user.id).to.eql(2); pm.expect(user.email).to.eql('frank@example.com'); });",
+            "pm.test('session cookie exists after login', () => pm.expect(pm.cookies.has('connect.sid'), 'Missing connect.sid: enable the Postman cookie jar for this run').to.eql(true));"
+          ] } }]
+        },
+        {
+          "name": "Get current session",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/sessions/current" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('current session status is 200', () => pm.response.to.have.status(200));",
+            "const user = pm.response.json();",
+            "pm.test('current session is Frank', () => pm.expect(user.id).to.eql(2));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "2. Films to Review and Online Snapshot",
+      "item": [
+        {
+          "name": "List films to review",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/films/to-review" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('films-to-review status is 200', () => pm.response.to.have.status(200));",
+            "const page = pm.response.json();",
+            "pm.test('response is a paginated film collection', () => pm.expect(page).to.include.key('films'));",
+            "const filmIds = (page.films || []).map(film => String(film.id));",
+            "pm.test('Frank is assigned to both seed films he reviews', () => { pm.expect(filmIds).to.include(pm.collectionVariables.get('filmIdAssignedOne')); pm.expect(filmIds).to.include(pm.collectionVariables.get('filmIdAssignedTwo')); });"
+          ] } }]
+        },
+        {
+          "name": "Establish known active film (film 1)",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdAssignedOne}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('select active status is 200', () => pm.response.to.have.status(200));",
+            "const review = pm.response.json();",
+            "pm.test('review is now active for film 1', () => { pm.expect(review.active).to.eql(true); pm.expect(String(review.filmId)).to.eql(pm.collectionVariables.get('filmIdAssignedOne')); });",
+            "console.log('This request makes the online-snapshot check below independent of whatever active film a previous Runner/server session may have left set — the collection does not assume a pristine, just-started server.');"
+          ] } }]
+        },
+        {
+          "name": "Get online users (initial state)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/users/online" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('online snapshot status is 200', () => pm.response.to.have.status(200));",
+            "const online = pm.response.json();",
+            "pm.test('online snapshot is an array', () => pm.expect(online).to.be.an('array'));",
+            "const frank = online.find(entry => entry.userId === 2);",
+            "pm.test('Frank appears in the online snapshot exactly once', () => { pm.expect(frank, 'Frank not found in online snapshot').to.exist; pm.expect(online.filter(entry => entry.userId === 2)).to.have.lengthOf(1); });",
+            "pm.test('Frank shows film 1 as active (established by the previous request)', () => pm.expect(String(frank.filmId)).to.eql(pm.collectionVariables.get('filmIdAssignedOne')));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "3. Active Film Selection",
+      "item": [
+        {
+          "name": "Select assigned film 2 as active (replaces film 1)",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdAssignedTwo}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('select active status is 200', () => pm.response.to.have.status(200));",
+            "const review = pm.response.json();",
+            "pm.test('review is now active for film 2', () => { pm.expect(review.active).to.eql(true); pm.expect(String(review.filmId)).to.eql(pm.collectionVariables.get('filmIdAssignedTwo')); });"
+          ] } }]
+        },
+        {
+          "name": "Verify online snapshot shows the replacement",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/users/online" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('online snapshot status is 200', () => pm.response.to.have.status(200));",
+            "const online = pm.response.json();",
+            "const frank = online.find(entry => entry.userId === 2);",
+            "pm.test('Frank now shows film 2 as active, not film 1', () => { pm.expect(frank, 'Frank not found in online snapshot').to.exist; pm.expect(String(frank.filmId)).to.eql(pm.collectionVariables.get('filmIdAssignedTwo')); });",
+            "pm.test('Frank still appears exactly once (no duplicate entry from the replacement)', () => pm.expect(online.filter(entry => entry.userId === 2)).to.have.lengthOf(1));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "4. Clear Active Film",
+      "item": [
+        {
+          "name": "Clear active film",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/users/current/active-film" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('clear active film status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        },
+        {
+          "name": "Verify online snapshot shows no active film",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/users/online" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('online snapshot status is 200', () => pm.response.to.have.status(200));",
+            "const online = pm.response.json();",
+            "const frank = online.find(entry => entry.userId === 2);",
+            "pm.test('Frank has no active film after clearing', () => { pm.expect(frank, 'Frank not found in online snapshot').to.exist; pm.expect(frank.filmId == null, 'expected filmId to be null/absent').to.eql(true); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "5. Authorization and Validation",
+      "item": [
+        {
+          "name": "Logout Frank",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Frank logout status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        },
+        {
+          "name": "Unauthenticated active selection is rejected",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdAssignedOne}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('unauthenticated selection returns 401', () => pm.response.to.have.status(401));"
+          ] } }]
+        },
+        {
+          "name": "Login Alice (not an assigned reviewer)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"{{aliceEmail}}\",\"password\":\"{{alicePassword}}\"}" },
+            "url": "{{baseUrl}}/api/sessions"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Alice login status is exactly 200', () => pm.response.to.have.status(200));",
+            "const user = pm.response.json(); pm.test('authenticated user is Alice', () => pm.expect(user.id).to.eql(1));"
+          ] } }]
+        },
+        {
+          "name": "Unassigned-film selection is rejected",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdAssignedOne}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('unassigned reviewer selection returns 403', () => pm.response.to.have.status(403));"
+          ] } }]
+        },
+        {
+          "name": "Missing film selection is rejected",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdMissing}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('missing film selection returns 404', () => pm.response.to.have.status(404));"
+          ] } }]
+        },
+        {
+          "name": "Private film selection is rejected",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/films/{{filmIdPrivate}}/active" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('private film selection returns 404 (not exposed as an active-selectable public film)', () => pm.response.to.have.status(404));"
+          ] } }]
+        },
+        {
+          "name": "Logout Alice",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sessions/current" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Alice logout status is 204', () => pm.response.to.have.status(204));"
+          ] } }]
+        }
+      ]
+    }
+  ]
+}

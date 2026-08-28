@@ -15,23 +15,21 @@ The server is generated from `../openapi/openapi.yaml` with the customized templ
 
 Do not put handwritten business logic directly in this directory. Regeneration may overwrite generated files. Persistent behavior belongs in `../shared-services/`, and generator-specific glue belongs in `../adapters/openapi-generator/` or `../out/`.
 
+This generated directory is disposable. Uploaded files persist in
+`../runtime-data/uploaded_files/` by default. Set `UPLOAD_DIR` before starting the server to
+use another location; the upload directory is created automatically.
+
 ## Running
 
-From the repository root:
+`npm start` (from the repository root, or from inside this directory) only
+installs this directory's own dependencies and starts the already-generated
+server — it does **not** regenerate anything. Regenerate first if
+`../openapi/openapi.yaml` or a template in `../out/` changed:
 
 ```bash
-npm start
+npm run generate:final   # from the repository root; rebuilds this directory
+npm start                # from the repository root, or from inside this directory
 ```
-
-This regenerates this directory, installs its dependencies, and starts the server.
-
-To run this generated server directly after dependencies are installed:
-
-```bash
-npm start
-```
-
-from inside `generated-openapi-generator-custom/`.
 
 The server defaults to port `3000`. Override it with:
 

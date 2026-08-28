@@ -3,21 +3,12 @@ const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
 // EVALUATION-NOTE: Template makes regenerated final services delegate to handwritten logic.
-const successStatusByOperation = {
-  sessionsPOST: 201,
-  sessionsCurrentDELETE: 204,
-  filmsPOST: 201,
-  reviewsAutoInvitationsPOST: 201,
-  filmsFilmIdDELETE: 204,
-  filmsFilmIdReviewsPOST: 201,
-  filmsFilmIdReviewsReviewerIdDELETE: 204,
-  usersCurrentActiveFilmDELETE: 204,
-  filmsFilmIdImagesPOST: 201,
-  filmsFilmIdImagesImageIdDELETE: 204,
-};
+// Success status codes and any response cookie are looked up from the adapter (outside this
+// generated/regenerated file) instead of being hard-coded per operationId in this template.
 
 /**
-* List images for a public owned/review film
+* List image metadata for a public film
+* Returns all image metadata without pagination or file bytes. Available only to the film owner or an assigned reviewer.
 *
 * filmId Integer 
 * returns List
@@ -29,7 +20,11 @@ const filmsFilmIdImagesGET = (params = {}) => new Promise(
           params.filmId,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdImagesGET || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdImagesGET'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdImagesGET'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -41,6 +36,7 @@ const filmsFilmIdImagesGET = (params = {}) => new Promise(
 );
 /**
 * Delete an image from a public owned film
+* Only the authenticated film owner may delete an image. Metadata and all registered physical representations are removed.
 *
 * filmId Integer 
 * imageId Integer 
@@ -54,7 +50,11 @@ const filmsFilmIdImagesImageIdDELETE = (params = {}) => new Promise(
           params.imageId,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdImagesImageIdDELETE || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdImagesImageIdDELETE'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdImagesImageIdDELETE'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -66,10 +66,11 @@ const filmsFilmIdImagesImageIdDELETE = (params = {}) => new Promise(
 );
 /**
 * Get image metadata or bytes using content negotiation
+* Returns metadata or an existing source image representation. Access is limited to the public film's owner or a reviewer assigned to that exact film. image/jpg is accepted as a request alias for image/jpeg; JPEG responses use the canonical image/jpeg type. A supported representation which is not locally stored may be created by the configured Converter and cached for later requests. Unsupported Accept media ranges return 406.
 *
 * filmId Integer 
 * imageId Integer 
-* accept String Requested representation for a single image. (optional)
+* accept String Standard Accept negotiation for application/json, image/png, image/jpeg (image/jpg alias), and image/gif. Missing Accept and *_/_* default deterministically to application/json. Comma-separated ranges, quality values, and optional parameters are supported. q=0 excludes a representation; highest quality then highest specificity wins, followed by the stable preference application/json, image/png, image/jpeg, image/gif. Unsupported or currently Unsupported representations receive 406. A supported missing representation may trigger conversion and persistent caching. (optional)
 * returns Image
 * */
 const filmsFilmIdImagesImageIdGET = (params = {}) => new Promise(
@@ -81,7 +82,11 @@ const filmsFilmIdImagesImageIdGET = (params = {}) => new Promise(
           params.accept,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdImagesImageIdGET || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdImagesImageIdGET'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdImagesImageIdGET'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -93,6 +98,7 @@ const filmsFilmIdImagesImageIdGET = (params = {}) => new Promise(
 );
 /**
 * Upload an image for a public owned film
+* The authenticated film owner may upload one valid PNG, JPEG/JPG, or GIF file of at most 5 MiB. Filename extension, multipart media type, and file bytes must agree.
 *
 * filmId Integer 
 * image File 
@@ -106,7 +112,11 @@ const filmsFilmIdImagesPOST = (params = {}) => new Promise(
           params.image,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdImagesPOST || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdImagesPOST'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdImagesPOST'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(

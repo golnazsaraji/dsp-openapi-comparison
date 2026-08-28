@@ -20,9 +20,19 @@ const sessionsPOST = async (request, response) => {
   await Controller.handleRequest(request, response, service.sessionsPOST);
 };
 
+const usersGET = async (request, response) => {
+  await Controller.handleRequest(request, response, service.usersGET);
+};
+
+const usersUserIdGET = async (request, response) => {
+  await Controller.handleRequest(request, response, service.usersUserIdGET);
+};
+
 
 module.exports = {
   sessionsCurrentDELETE,
   sessionsCurrentGET,
   sessionsPOST,
+  usersGET,
+  usersUserIdGET,
 };

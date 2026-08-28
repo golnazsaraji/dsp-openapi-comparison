@@ -8,11 +8,16 @@
 
 const Controller = require('./Controller');
 const service = require('../services/DefaultService');
+const apiGET = async (request, response) => {
+  await Controller.handleRequest(request, response, service.apiGET);
+};
+
 const healthGET = async (request, response) => {
   await Controller.handleRequest(request, response, service.healthGET);
 };
 
 
 module.exports = {
+  apiGET,
   healthGET,
 };

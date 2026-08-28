@@ -3,18 +3,8 @@ const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
 // EVALUATION-NOTE: Template makes regenerated final services delegate to handwritten logic.
-const successStatusByOperation = {
-  sessionsPOST: 201,
-  sessionsCurrentDELETE: 204,
-  filmsPOST: 201,
-  reviewsAutoInvitationsPOST: 201,
-  filmsFilmIdDELETE: 204,
-  filmsFilmIdReviewsPOST: 201,
-  filmsFilmIdReviewsReviewerIdDELETE: 204,
-  usersCurrentActiveFilmDELETE: 204,
-  filmsFilmIdImagesPOST: 201,
-  filmsFilmIdImagesImageIdDELETE: 204,
-};
+// Success status codes and any response cookie are looked up from the adapter (outside this
+// generated/regenerated file) instead of being hard-coded per operationId in this template.
 
 /**
 * Select a public review film as active
@@ -29,7 +19,11 @@ const filmsFilmIdActivePUT = (params = {}) => new Promise(
           params.filmId,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdActivePUT || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdActivePUT'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdActivePUT'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -52,7 +46,11 @@ const filmsFilmIdDELETE = (params = {}) => new Promise(
           params.filmId,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdDELETE || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdDELETE'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdDELETE'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -63,7 +61,8 @@ const filmsFilmIdDELETE = (params = {}) => new Promise(
   },
 );
 /**
-* Get an accessible film
+* Get one private film owned by the current user
+* Returns one private film only when the authenticated user owns it. This is the single-resource counterpart to `GET /api/films`.
 *
 * filmId Integer 
 * returns Film
@@ -75,7 +74,11 @@ const filmsFilmIdGET = (params = {}) => new Promise(
           params.filmId,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdGET || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdGET'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdGET'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -90,7 +93,7 @@ const filmsFilmIdGET = (params = {}) => new Promise(
 *
 * filmId Integer 
 * filmInput FilmInput 
-* returns Film
+* no response value expected for this operation
 * */
 const filmsFilmIdPUT = (params = {}) => new Promise(
   async (resolve, reject) => {
@@ -100,7 +103,11 @@ const filmsFilmIdPUT = (params = {}) => new Promise(
           params.filmInput || params.body || params,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsFilmIdPUT || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsFilmIdPUT'),
+        DefaultServiceAdapter.responseCookie('filmsFilmIdPUT'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -111,7 +118,8 @@ const filmsFilmIdPUT = (params = {}) => new Promise(
   },
 );
 /**
-* List films owned by the current user
+* List private films owned by the current user
+* Returns the authenticated user's private films as a paginated collection. Public films remain available through `/api/films/public`.
 *
 * page Integer One-based page number. (optional)
 * limit Integer Maximum number of resources returned in one page. (optional)
@@ -125,7 +133,11 @@ const filmsGET = (params = {}) => new Promise(
           params.limit,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsGET || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsGET'),
+        DefaultServiceAdapter.responseCookie('filmsGET'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -148,7 +160,11 @@ const filmsPOST = (params = {}) => new Promise(
           params.filmInput || params.body || params,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsPOST || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsPOST'),
+        DefaultServiceAdapter.responseCookie('filmsPOST'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -173,7 +189,11 @@ const filmsToReviewGET = (params = {}) => new Promise(
           params.limit,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.filmsToReviewGET || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('filmsToReviewGET'),
+        DefaultServiceAdapter.responseCookie('filmsToReviewGET'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -194,7 +214,11 @@ const usersCurrentActiveFilmDELETE = (params = {}) => new Promise(
       const result = await DefaultServiceAdapter.usersCurrentActiveFilmDELETE(
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.usersCurrentActiveFilmDELETE || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('usersCurrentActiveFilmDELETE'),
+        DefaultServiceAdapter.responseCookie('usersCurrentActiveFilmDELETE'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(

@@ -7,15 +7,42 @@
     "doc": "docs"
   },
   "scripts": {
-    "generate:final": "openapi-generator-cli generate -i openapi/openapi.yaml -g nodejs-express-server -t out -o generated-openapi-generator-custom",
+    "generate:response-metadata": "node scripts/generate-openapi-response-metadata.js",
+    "generate:server": "openapi-generator-cli generate -i openapi/openapi.yaml -g nodejs-express-server -t out -o generated-openapi-generator-custom",
+    "generate:final": "npm run generate:response-metadata && npm run generate:server",
     "start": "npm run start:final",
-    "start:final": "npm run generate:final && cd generated-openapi-generator-custom && npm install && npm start",
+    "start:final": "cd generated-openapi-generator-custom && npm start",
     "start:initial": "cd generated-openapi-generator && npm install && npm start",
-    "test": "npm run smoke",
+    "test": "npm run test:response-metadata && npm run test:lab01 && npm run smoke",
+    "test:response-metadata": "node scripts/openapi-response-metadata-tests.js",
+    "test:lab01": "node scripts/lab01-schema-tests.js && node scripts/lab01-service-tests.js",
+    "test:lab02": "node scripts/lab02-phase1-tests.js && node scripts/lab02-converter-client-tests.js",
+    "test:lab02:integration": "node scripts/lab02-grpc-integration-tests.js",
+    "test:lab02:proto": "node scripts/lab02-proto-consistency.js",
+    "test:lab03": "node scripts/lab03-protocol-tests.js && node scripts/lab03-client-robustness-tests.js && node scripts/lab03-server-concurrency-tests.js && node scripts/lab03-large-file-and-matrix-tests.js && node scripts/lab03-alpha-conversion-tests.js && node scripts/lab03-interoperability-tests.js",
+    "test:lab04": "node scripts/lab04-schema-tests.js && node scripts/lab04-service-tests.js && node scripts/lab04-realtime-tests.js",
+    "test:lab04:client": "cd shared-services/lab04/client-app && npm test && npm run build",
+    "test:lab05": "node scripts/lab05-schema-tests.js && node scripts/lab05-topic-tests.js && node scripts/lab05-service-tests.js && node scripts/lab05-mqtt-gateway-tests.js && node scripts/lab05-hygiene-tests.js && node scripts/lab05-integration-tests.js && node scripts/lab05-regeneration-tests.js",
+    "test:lab05:integration": "node scripts/lab05-mqtt-integration-tests.js",
+    "converter:build": "cd shared-services/lab02/converter-java && ./mvnw test package",
+    "converter:start": "cd shared-services/lab02/converter-java && ./mvnw exec:java",
     "smoke": "node scripts/smoke-custom.js",
     "test:initial": "node scripts/smoke-initial.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "bcrypt": "^6.0.0",
+    "express-session": "^1.18.2",
+    "js-yaml": "^4.3.2",
+    "mqtt": "^5.10.4",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "ws": "^8.18.0"
+  }
 }

@@ -3,18 +3,8 @@ const Service = require('./Service');
 const DefaultServiceAdapter = require('../../adapters/openapi-generator/DefaultServiceAdapter');
 
 // EVALUATION-NOTE: Template makes regenerated final services delegate to handwritten logic.
-const successStatusByOperation = {
-  sessionsPOST: 201,
-  sessionsCurrentDELETE: 204,
-  filmsPOST: 201,
-  reviewsAutoInvitationsPOST: 201,
-  filmsFilmIdDELETE: 204,
-  filmsFilmIdReviewsPOST: 201,
-  filmsFilmIdReviewsReviewerIdDELETE: 204,
-  usersCurrentActiveFilmDELETE: 204,
-  filmsFilmIdImagesPOST: 201,
-  filmsFilmIdImagesImageIdDELETE: 204,
-};
+// Success status codes and any response cookie are looked up from the adapter (outside this
+// generated/regenerated file) instead of being hard-coded per operationId in this template.
 
 /**
 * Logout
@@ -27,7 +17,11 @@ const sessionsCurrentDELETE = (params = {}) => new Promise(
       const result = await DefaultServiceAdapter.sessionsCurrentDELETE(
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.sessionsCurrentDELETE || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('sessionsCurrentDELETE'),
+        DefaultServiceAdapter.responseCookie('sessionsCurrentDELETE'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -48,7 +42,11 @@ const sessionsCurrentGET = (params = {}) => new Promise(
       const result = await DefaultServiceAdapter.sessionsCurrentGET(
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.sessionsCurrentGET || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('sessionsCurrentGET'),
+        DefaultServiceAdapter.responseCookie('sessionsCurrentGET'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -71,7 +69,63 @@ const sessionsPOST = (params = {}) => new Promise(
           params.loginRequest || params.body || params,
       );
 
-      resolve(Service.successResponse(result, successStatusByOperation.sessionsPOST || 200));
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('sessionsPOST'),
+        DefaultServiceAdapter.responseCookie('sessionsPOST'),
+      ));
+} catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
+      reject(Service.rejectResponse(
+        e.message || 'Invalid input',
+        e.status || 500,
+      ));
+    }
+  },
+);
+/**
+* List users that may be invited to review films
+*
+* returns List
+* */
+const usersGET = (params = {}) => new Promise(
+  async (resolve, reject) => {
+    try {
+      const result = await DefaultServiceAdapter.usersGET(
+      );
+
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('usersGET'),
+        DefaultServiceAdapter.responseCookie('usersGET'),
+      ));
+} catch (e) {
+      // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
+      reject(Service.rejectResponse(
+        e.message || 'Invalid input',
+        e.status || 500,
+      ));
+    }
+  },
+);
+/**
+* Get one user
+*
+* userId Integer 
+* returns User
+* */
+const usersUserIdGET = (params = {}) => new Promise(
+  async (resolve, reject) => {
+    try {
+      const result = await DefaultServiceAdapter.usersUserIdGET(
+          params.userId,
+      );
+
+      resolve(Service.successResponse(
+        result,
+        DefaultServiceAdapter.successStatus('usersUserIdGET'),
+        DefaultServiceAdapter.responseCookie('usersUserIdGET'),
+      ));
 } catch (e) {
       // EVALUATION-NOTE: Preserve explicit business status codes; unknown failures are 500.
       reject(Service.rejectResponse(
@@ -86,4 +140,6 @@ module.exports = {
   sessionsCurrentDELETE,
   sessionsCurrentGET,
   sessionsPOST,
+  usersGET,
+  usersUserIdGET,
 };
