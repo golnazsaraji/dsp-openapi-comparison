@@ -1,8 +1,7 @@
 # Lab05 Implementation
 
-Companion to `docs/lab05-compliance-audit.md` (which holds the atomic
-requirement matrix and test-result evidence). This document explains *how*
-the implementation works. Every subsection is tagged with its origin:
+This document explains how the final implementation works. Every subsection
+is tagged with its origin:
 
 - **[PDF]** — mandated by `specifications/lab05/material/{Lab05,LaboratoryActivity05}.pdf`
 - **[AD]** — an approved architectural decision (Phase 1/2 task briefs), where the PDF leaves the choice open
@@ -386,6 +385,13 @@ integration test); `test:lab05:integration` is split out specifically
 because it requires a locally installed Mosquitto executable, honestly
 reported as NOT RUN (with the exact search performed) rather than silently
 skipped or mocked if one isn't found.
+
+The connector, reducers, guards, and filtering decisions have direct unit
+coverage. A small amount of their composition in React hooks/components—such
+as connect-on-mount behavior and one-line effect wiring—is verified by source
+inspection rather than a fully browser-rendered end-to-end component test,
+because this project does not include `@testing-library/react`. This is a test
+coverage limitation, not an unimplemented Lab05 behavior.
 
 ## 29. Postman usage
 

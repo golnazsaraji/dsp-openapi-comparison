@@ -74,6 +74,5 @@ The collection logs out the sessions it creates in its own last requests
 resets all in-memory state (films, sessions, active-film assignments); rerun
 from folder 1 after a restart.
 
-See `docs/lab04-implementation.md` for how the underlying feature works and
-`docs/lab04-compliance-audit.md` for the full requirement-by-requirement
-evidence trail.
+See `docs/lab04-implementation.md` for the underlying feature, architecture,
+limitations, and automated verification commands.

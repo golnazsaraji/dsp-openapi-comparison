@@ -1,7 +1,7 @@
 # Documentation index
 
 This directory holds the written analysis, per-lab implementation docs,
-compliance audit records, and configuration reference for the project. See
+runbooks, and configuration reference for the project. See
 the root [`README.md`](../README.md) for the project overview and quick
 start.
 
@@ -38,41 +38,6 @@ Present-tense documents describing how each lab works today:
 | [`../shared-services/lab03/README.md`](../shared-services/lab03/README.md) | Lab03 — TCP image-conversion protocol |
 | [`lab04-implementation.md`](lab04-implementation.md) | Lab04 — WebSocket presence and active-film notifications |
 | [`lab05-implementation.md`](lab05-implementation.md) | Lab05 — MQTT exclusive active-film selection (supersedes part of Lab04) |
-
-## Historical appendices
-
-Superseded, point-in-time development documents, kept for history. Each
-carries a banner pointing to its current replacement.
-
-| Document | Superseded by |
-|---|---|
-| [`appendix/lab02-phase1-implementation.md`](appendix/lab02-phase1-implementation.md) | [`lab02-implementation.md`](lab02-implementation.md) |
-| [`appendix/lab02-phase2-implementation.md`](appendix/lab02-phase2-implementation.md) | [`lab02-implementation.md`](lab02-implementation.md) |
-| [`appendix/lab02-phase3-implementation.md`](appendix/lab02-phase3-implementation.md) | [`lab02-implementation.md`](lab02-implementation.md) |
-
-## Compliance audits
-
-Dated, point-in-time audit records verifying specific requirement sets
-against the repository state *as it existed when each audit was written*.
-They are not living documents — read them alongside the current
-implementation doc for the same lab, and treat any git-state claim inside
-them (branch, commit, "tracked/not tracked") as historical unless a banner
-says otherwise.
-
-| Document | Audited lab | Current implementation doc |
-|---|---|---|
-| [`lab04-compliance-audit.md`](lab04-compliance-audit.md) | Lab04 | [`lab04-implementation.md`](lab04-implementation.md) |
-| [`lab05-compliance-audit.md`](lab05-compliance-audit.md) | Lab05 | [`lab05-implementation.md`](lab05-implementation.md) |
-
-The Lab02 and Lab03 compliance audits (`lab02-compliance-audit.md`,
-`lab02-compliance-audit-verification.md`, `lab02-final-compliance-audit.md`,
-`lab03-compliance-audit.md`) are **not tracked in git** — they are excluded via
-`.gitignore` and exist only in local working trees that happened to create
-them, consistent with the Lab01/Lab02 precedent of not committing these
-working documents. They are intentionally not linked here because a link to
-them would be dead in a fresh clone. See
-[`../shared-services/lab03/README.md`](../shared-services/lab03/README.md) for
-Lab03's current, tracked documentation.
 
 ## Postman
 

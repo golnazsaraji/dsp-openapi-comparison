@@ -88,6 +88,5 @@ active films, logging out, deleting only films the collection itself
 created). Restarting the Film Manager server resets all in-memory state;
 rerun from folder 1 after a restart.
 
-See `docs/lab05-implementation.md` for how the underlying feature works and
-`docs/lab05-compliance-audit.md` for the full requirement-by-requirement
-evidence trail.
+See `docs/lab05-implementation.md` for the underlying feature, architecture,
+limitations, and automated verification commands.

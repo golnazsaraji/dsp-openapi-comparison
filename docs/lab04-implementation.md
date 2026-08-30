@@ -54,6 +54,11 @@ other distributed infrastructure was **intentionally not introduced**: it is out
 requirements and outside this project's scope, which targets a single Film Manager process. This is a
 known, accepted scope boundary of the current single-process academic deployment, not a defect.
 
+The WebSocket layer also does not implement heartbeat/ping-pong detection for a
+silently half-open client connection. Normal close/error cleanup is implemented,
+but proactive stale-connection detection is an optional hardening measure, not a
+Lab04 requirement.
+
 ## Corrected defects (project code, not the professor's)
 
 - **Exclusivity rule.** The project's own prior implementation rejected selecting a film already active
@@ -118,7 +123,5 @@ npm run generate:final
 npx newman run postman/lab04/lab04.postman_collection.json   # manual REST verification (supplemental)
 ```
 
-See `docs/lab04-compliance-audit.md` for the full requirement-by-requirement evidence trail, including
-§14's record of the six corrections applied after an independent verification pass (session identity,
-Postman collection, dead OpenAPI response, audit classification accuracy, schema duplication, shutdown
-robustness).
+The automated suites above and `postman/lab04/README.md` describe the current
+verification coverage and the boundary between REST and WebSocket checks.

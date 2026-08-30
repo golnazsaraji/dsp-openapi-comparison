@@ -4,10 +4,9 @@ This directory contains the Lab03 TCP/IP socket implementation artifacts for the
 concurrent image-conversion server and a command-line client, communicating over a raw TCP binary
 protocol (no HTTP/REST/OpenAPI involved — see `postman/lab03/README.md` for why Postman does not apply).
 
-This document cites `docs/lab03-compliance-audit.md` in several places below for supporting evidence.
-That file is a local working document excluded from git (`.gitignore`) and is not part of the tracked
-repository — it will not exist in a fresh clone. Where cited, treat it as optional supplementary
-evidence, not a required reference.
+The protocol, build/run instructions, automated test matrix, interoperability
+behavior, and known limitations are documented here so a fresh clone needs no
+separate audit record.
 
 ## Protocol
 
@@ -47,9 +46,8 @@ partially transparent pixels become white (or a white blend, for partial transpa
 pixels are unaffected. PNG and GIF targets are never flattened — alpha is preserved exactly as decoded.
 This was a real defect found during manual testing (`ImageIO.write(argbImage, "jpeg", ...)` returns
 `false` — not an exception — because the baseline JPEG writer cannot encode that color model, which the
-server previously misreported as "No ImageIO writer available for JPG"); see
-`docs/lab03-compliance-audit.md`, "Post-audit defect: alpha-channel JPEG conversion," for the full root
-cause and fix.
+server previously misreported as "No ImageIO writer available for JPG"). The
+dedicated alpha-conversion test suite below covers the corrected behavior.
 
 ## Source files
 
@@ -120,7 +118,7 @@ none of them set is unchanged from the plain `java -cp bin ...` invocations abov
 | Property | Default | Effect |
 |---|---|---|
 | `lab03.workerThreads` | `16` | Server worker-pool size (fixed core/max). Must be a positive integer; an invalid value fails clearly at startup (message + non-zero exit), not silently. |
-| `lab03.queueCapacity` | `64` | Server's bounded task queue depth beyond the active worker threads; once both are full, a new connection is rejected and its socket is closed immediately (no new wire-level status was introduced for this — see the compliance audit). Same validation as `workerThreads`. |
+| `lab03.queueCapacity` | `64` | Server's bounded task queue depth beyond the active worker threads; once both are full, a new connection is rejected and its socket is closed immediately (no new wire-level status was introduced). Same validation as `workerThreads`; the concurrency suite covers rejection behavior. |
 | `lab03.socketTimeoutMs` | `30000` | Connect/read timeout (ms) used by both client and server. An invalid (non-numeric) value silently falls back to the default, per the JDK's own `Integer.getInteger` contract — this is intentional and documented, not a bug. |
 | `lab03.forceInternalError` | `false` | Server-only test seam: when `true`, every conversion deterministically fails as an unexpected internal error (status `2`). Not reachable through any client-controlled protocol input; exists solely to test status-`2` framing without depending on a real, unstable runtime failure. |
 | `lab03.debugLogging` | `false` | Server-only test seam: prints one-line stdout markers (`worker-queued`, `worker-rejected`, `worker-started`) used to synchronize concurrency tests deterministically. Never touches wire-protocol bytes. |
@@ -164,8 +162,7 @@ professor reference implementation:
 - **Four combinations tested**: project client → project server (baseline); professor client → project
   server; project client → professor server (including a few malformed-input cases); professor client →
   professor server (a reference-only baseline, never treated as compliance evidence for either side).
-- **Professor defects, not project failures**: the professor server has known bugs (see
-  `docs/lab03-compliance-audit.md`, "Known professor-reference defects") where certain malformed inputs
+- **Professor defects, not project failures**: the professor server has known bugs where certain malformed inputs
   (an oversized declared length with a truncated body, a genuinely truncated body, or undecodable image
   bytes) crash a handler thread via an uncaught exception *without ever closing the socket*. The test
   wraps every professor-server request in a hard timeout that force-destroys the connection, classifies
@@ -194,8 +191,7 @@ command.
   plain `ImageIO` and both PDFs' silence on animation; no animated-GIF support exists or is planned.
 - **Encoded request size is bounded (50 MiB) but decoded-raster size is not.** A highly compressible,
   extreme-dimension image could still decode to a much larger in-memory raster than its encoded byte
-  count. Documented as a residual, non-mandatory hardening opportunity in `docs/lab03-compliance-audit.md`
-  rather than fixed, per that document's memory/boundedness review.
+  count. This is a residual, non-mandatory hardening opportunity.
 - **`lab03.socketTimeoutMs` falls back silently on an invalid value**, while `lab03.workerThreads` /
   `lab03.queueCapacity` fail loudly — both are intentional, documented choices (see "Configuration
   properties" above), not an inconsistency needing a fix.

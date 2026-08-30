@@ -53,7 +53,7 @@ The Lab04 realtime implementation actually wired into the running server
 `specifications/lab04/schemas/ws_message_schema.json`, **not** from `schemas/ws_message_schema.json` in
 this directory. `schemas/ws_message_schema.json` here is kept only as a synchronized reference copy
 alongside the rest of this directory's design artifacts (`client/`, `server/`, `examples/`), which are
-themselves not wired into the running server (see `docs/lab04-compliance-audit.md` §1 for why). It is not
+themselves not wired into the running server (see `docs/lab04-implementation.md` for the current architecture). It is not
 a second source of truth: `scripts/lab04-schema-tests.js` asserts the two files are byte-for-byte
 identical on every `npm run test:lab04` run, so any drift between them fails the test suite immediately
 rather than silently diverging.

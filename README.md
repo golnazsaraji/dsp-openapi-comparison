@@ -26,7 +26,7 @@ exclusive active-film selection.
 | `runtime-data/` | Persistent data outside the disposable generated server (uploaded files, image metadata). |
 | `scripts/` | Test suites and smoke-test scripts. |
 | `postman/` | Postman collections for manual and automated (Newman) checks. |
-| `docs/` | Written analysis, per-lab implementation docs, compliance audits, and configuration reference. See `docs/README.md` for the full index. |
+| `docs/` | Written analysis, per-lab implementation docs, runbooks, and configuration reference. See `docs/README.md` for the full index. |
 
 ## 3. Architecture
 
@@ -178,7 +178,7 @@ Postman/Newman commands.
 
 See `docs/README.md` for the complete, categorized documentation index
 (getting started, architecture/comparison analysis, per-lab implementation
-docs, compliance audits, historical appendices, Postman guides). Start with:
+docs, configuration, runbooks, and Postman guides). Start with:
 
 - `docs/run-all-labs.md` — canonical end-to-end startup/test sequence
 - `docs/configuration.md` — every environment variable
