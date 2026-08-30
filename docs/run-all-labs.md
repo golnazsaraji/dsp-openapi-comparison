@@ -14,12 +14,20 @@ Working directory: repository root.
 | Git | `git --version` | any recent version |
 | Node.js | `node -v` | `v18` or newer |
 | npm | `npm -v` | bundled with Node.js |
-| Java | `java -version` | 17 or newer (see `README.md` for why) |
-| OpenAPI Generator CLI | `npx openapi-generator-cli version` | `7.22.0` |
+| Java JDK | `java -version` and `javac -version` | 17 or newer for the complete all-labs setup |
+| OpenAPI Generator CLI | `openapi-generator-cli version` | OpenAPI Generator engine `7.22.0` |
 | Mosquitto (Lab05 only) | `mosquitto -h` | any recent version |
 
 If any check fails, see the **Prerequisites** section of `README.md` for
 install commands.
+
+The JDK 17 baseline combines two different requirements: OpenAPI regeneration
+uses the Java-based OpenAPI Generator engine `7.22.0`, which requires Java 11
+or newer, while the Lab02 Converter explicitly targets Java 17. Lab03 also
+invokes `javac` and `java` but does not pin a release. The response-metadata
+generator and the already-generated Node.js server do not use Java. See
+`README.md` under **Java Requirements and Where Java Is Used** for the command
+matrix and version-pinning distinction.
 
 ## 2. Install and generate
 

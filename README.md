@@ -53,9 +53,42 @@ logic, the WebSocket presence gateway, and the MQTT gateway — lives in
 |---|---|---|
 | `git` | any recent version | clone and manage the repository |
 | Node.js + `npm` | 18 or newer | run the generated server, shared services, tests |
-| Java (JDK or JRE) | 17 or newer | build/run the Lab02 Converter (`shared-services/lab02/converter-java`, which targets Java 17 via `maven.compiler.release`); OpenAPI Generator CLI 7.22.0 itself only requires Java 11+ |
-| `@openapitools/openapi-generator-cli` | pinned to `7.22.0` in `openapitools.json` | regenerate the server |
+| Java JDK | 17 or newer | complete all-labs setup; satisfies the Lab02 Converter's Java 17 target and OpenAPI Generator's Java 11 minimum |
+| `@openapitools/openapi-generator-cli` | globally installed; npm wrapper version is not pinned | invoke the OpenAPI Generator engine used to regenerate the server |
 | Mosquitto | any recent version | optional MQTT broker for Lab05 |
+
+### Java Requirements and Where Java Is Used
+
+Java is required by specific development, generation, and lab workflows; it is
+not a runtime dependency of the already-generated Node.js REST server.
+
+| Component / operation | Java requirement | Reason |
+|---|---|---|
+| OpenAPI server regeneration | Java 11 or newer | OpenAPI Generator engine `7.22.0` runs as a Java JAR; see the [official OpenAPI Generator 7.22.0 documentation](https://github.com/OpenAPITools/openapi-generator/tree/v7.22.0#13---download-jar) |
+| Response metadata generation | None | `scripts/generate-openapi-response-metadata.js` runs with Node.js and `js-yaml` |
+| Generated Node.js server runtime | None | `generated-openapi-generator-custom/package.json` starts it with `node index.js` |
+| Lab02 Converter | JDK 17 or newer | `shared-services/lab02/converter-java/pom.xml` sets `maven.compiler.release` to `17` |
+| Lab03 Java demo and tests | JDK required; release not pinned | the Lab03 scripts invoke `javac` and `java`, but the repository sets no Java release for them |
+| Complete all-labs setup | JDK 17 or newer | one JDK satisfies both OpenAPI Generator's Java 11 minimum and Lab02's Java 17 requirement |
+
+The root commands have these requirements:
+
+| Command | Java requirement |
+|---|---|
+| `npm run generate:server` | Java 11 or newer |
+| `npm run generate:final` | Java 11 or newer for its `generate:server` stage; its `generate:response-metadata` stage does not use Java |
+| `npm run generate:response-metadata` | None |
+| `npm run converter:build` | JDK 17 or newer |
+| `npm run converter:start` | JDK 17 or newer |
+| `npm start` / `npm run start:final` | None; these start the already-generated Node.js server |
+
+`openapitools.json` pins the **OpenAPI Generator engine** to `7.22.0`. The
+`@openapitools/openapi-generator-cli` **npm wrapper** is not declared in the
+root `package.json` or `package-lock.json`; the installation commands below
+install it globally without pinning its npm package version. The wrapper reads
+`openapitools.json`, selects engine `7.22.0`, and launches that engine's Java
+JAR. Therefore Java 17 is the complete-project baseline because of Lab02, not
+because OpenAPI regeneration specifically requires Java 17.
 
 macOS:
 
