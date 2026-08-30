@@ -22,7 +22,10 @@ The following command was executed from the project root:
 openapi-generator-cli config-help -g nodejs-express-server
 ```
 
-The output was saved into `commands.txt`.
+The output was inspected directly and the relevant options are summarized
+below. The repository does not retain a raw output file for this command;
+the root `commands.txt` is a project run-command reference, not generator
+option output.
 
 ### Observed configuration options
 
