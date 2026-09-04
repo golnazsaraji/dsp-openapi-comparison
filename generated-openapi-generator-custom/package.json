@@ -4,7 +4,6 @@
   "description": "Shared Film Manager service contract for DSP laboratory work.",
   "main": "index.js",
   "scripts": {
-    "prestart": "npm install",
     "start": "node index.js"
   },
   "keywords": [

@@ -57,7 +57,9 @@ function attachMqttGateway(mqttClient, eventSource, { logger = console, onError 
     // connect and every automatic reconnect) recomputes and republishes one
     // retained message per public film, deterministically ordered by
     // ascending film id (see FilmManagerService#mqttInitialFilmMessages).
+    let clientErrorReported = false;
     const onConnect = () => {
+        clientErrorReported = false;
         try {
             eventSource.mqttInitialFilmMessages().forEach(({ filmId, message }) => publish(filmId, message));
         } catch (error) {
@@ -65,7 +67,11 @@ function attachMqttGateway(mqttClient, eventSource, { logger = console, onError 
         }
     };
     const onFilmStatusChanged = ({ filmId, message }) => publish(filmId, message);
-    const onClientError = (error) => reportError('MQTT client error:', error);
+    const onClientError = (error) => {
+        if (clientErrorReported) return;
+        clientErrorReported = true;
+        reportError('MQTT client error (broker unavailable; retrying in the background):', error);
+    };
 
     mqttClient.on('connect', onConnect);
     mqttClient.on('error', onClientError);

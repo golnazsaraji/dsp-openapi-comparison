@@ -12,10 +12,9 @@ Working directory: repository root.
 | Check | Command | Expected |
 |---|---|---|
 | Git | `git --version` | any recent version |
-| Node.js | `node -v` | `v18` or newer |
+| Node.js | `node -v` | Node.js 22 LTS recommended (`.nvmrc`); 20.19.0 minimum |
 | npm | `npm -v` | bundled with Node.js |
 | Java JDK | `java -version` and `javac -version` | 17 or newer for the complete all-labs setup |
-| OpenAPI Generator CLI | `openapi-generator-cli version` | OpenAPI Generator engine `7.22.0` |
 | Mosquitto (Lab05 only) | `mosquitto -h` | any recent version |
 
 If any check fails, see the **Prerequisites** section of `README.md` for
@@ -34,12 +33,12 @@ matrix and version-pinning distinction.
 Working directory: repository root.
 
 ```bash
-npm install
-npm run generate:final
+npm run setup
 ```
 
 Expected result: `generated-openapi-generator-custom/` is (re)built from
-`openapi/openapi.yaml` using the templates in `out/`. No server starts yet.
+`openapi/openapi.yaml` using the locally installed OpenAPI Generator engine
+`7.22.0` and the templates in `out/`. No server starts yet.
 
 ## 3. Start the Film Manager server
 
@@ -50,8 +49,9 @@ npm start
 ```
 
 Expected result: the terminal prints `Listening on port 3000` (or another
-port if `PORT` is set). This command does **not** regenerate the server —
-run step 2 first if `openapi/openapi.yaml` or a template changed.
+port if `PORT` is set). This command does **not** install dependencies or
+regenerate the server — run step 2 first if `openapi/openapi.yaml` or a
+template changed.
 
 Leave this terminal running. Stop it later with `Ctrl+C` — this closes the
 HTTP server, the Lab04 WebSocket gateway, and the Lab05 MQTT client

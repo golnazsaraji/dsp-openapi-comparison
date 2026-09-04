@@ -250,7 +250,7 @@ The new scripts keep the normal workflow small:
 | Script | What it does |
 |---|---|
 | `npm run generate:final` | Regenerates the custom server without starting it |
-| `npm start` | Installs dependencies and starts the already-generated custom server |
+| `npm start` | Starts the already-generated custom server without installing dependencies or regenerating code |
 | `npm test` | Runs API checks against an already running generated server |
 | `npm run smoke` | Same smoke test command used by `npm test` |
 

@@ -21,13 +21,15 @@ use another location; the upload directory is created automatically.
 
 ## Running
 
-`npm start` (from the repository root, or from inside this directory) only
-installs this directory's own dependencies and starts the already-generated
-server — it does **not** regenerate anything. Regenerate first if
+`npm start` (from the repository root, or from inside this directory) starts
+the already-generated server. It does **not** install dependencies or
+regenerate anything. From a fresh checkout, run `npm run setup` at the
+repository root first. Regenerate if
 `../openapi/openapi.yaml` or a template in `../out/` changed:
 
 ```bash
 npm run generate:final   # from the repository root; rebuilds this directory
+npm ci --prefix generated-openapi-generator-custom
 npm start                # from the repository root, or from inside this directory
 ```
 

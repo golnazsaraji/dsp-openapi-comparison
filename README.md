@@ -52,9 +52,9 @@ logic, the WebSocket presence gateway, and the MQTT gateway — lives in
 | Tool | Version | Purpose |
 |---|---|---|
 | `git` | any recent version | clone and manage the repository |
-| Node.js + `npm` | 18 or newer | run the generated server, shared services, tests |
+| Node.js + `npm` | Node.js 22 LTS recommended (`.nvmrc`); 20.19.0 minimum | run the generated server, shared services, tests |
 | Java JDK | 17 or newer | complete all-labs setup; satisfies the Lab02 Converter's Java 17 target and OpenAPI Generator's Java 11 minimum |
-| `@openapitools/openapi-generator-cli` | globally installed; npm wrapper version is not pinned | invoke the OpenAPI Generator engine used to regenerate the server |
+| `@openapitools/openapi-generator-cli` | installed by `npm run setup` | invoke the pinned OpenAPI Generator engine used to regenerate the server |
 | Mosquitto | any recent version | optional MQTT broker for Lab05 |
 
 ### Java Requirements and Where Java Is Used
@@ -83,9 +83,8 @@ The root commands have these requirements:
 | `npm start` / `npm run start:final` | None; these start the already-generated Node.js server |
 
 `openapitools.json` pins the **OpenAPI Generator engine** to `7.22.0`. The
-`@openapitools/openapi-generator-cli` **npm wrapper** is not declared in the
-root `package.json` or `package-lock.json`; the installation commands below
-install it globally without pinning its npm package version. The wrapper reads
+root project pins the `@openapitools/openapi-generator-cli` npm wrapper.
+The wrapper reads
 `openapitools.json`, selects engine `7.22.0`, and launches that engine's Java
 JAR. Therefore Java 17 is the complete-project baseline because of Lab02, not
 because OpenAPI regeneration specifically requires Java 17.
@@ -94,44 +93,43 @@ macOS:
 
 ```bash
 brew install git node openjdk@17 mosquitto
-npm install -g @openapitools/openapi-generator-cli
 ```
 
 Ubuntu / Debian (use NodeSource or `nvm` instead if the distribution's
-Node.js package is older than 18):
+Node.js package is older than 20.19.0):
 
 ```bash
 sudo apt update
 sudo apt install git nodejs npm openjdk-17-jdk mosquitto
-npm install -g @openapitools/openapi-generator-cli
 ```
 
 Fedora:
 
 ```bash
 sudo dnf install git nodejs npm java-17-openjdk-devel mosquitto
-npm install -g @openapitools/openapi-generator-cli
 ```
 
 Windows (`winget`):
 
 ```powershell
 winget install Git.Git OpenJS.NodeJS.LTS EclipseAdoptium.Temurin.17.JDK EclipseMosquitto.Mosquitto
-npm install -g @openapitools/openapi-generator-cli
 ```
 
 ## 5. Installation
 
+On a fresh checkout, select the recommended Node version and run the single
+setup command:
+
 ```bash
-npm install
-npm run generate:final
+nvm install
+nvm use
+npm run setup
 ```
 
-`npm install` installs the root-level tooling (test scripts, smoke test).
-`npm run generate:final` builds `generated-openapi-generator-custom/` from
-`openapi/openapi.yaml` and `out/`; it does not install that directory's own
-dependencies — that happens automatically the first time it starts (see
-below).
+`npm run setup` reproducibly installs root dependencies, builds
+`generated-openapi-generator-custom/` from `openapi/openapi.yaml` and `out/`,
+then reproducibly installs the generated server's dependencies. Both projects
+have committed lockfiles, so setup uses `npm ci`.
 
 ## 6. Configuration
 
@@ -147,10 +145,15 @@ credentials, React client build variable).
 npm start
 ```
 
-Installs `generated-openapi-generator-custom/`'s own dependencies (via its
-`prestart` script) and starts the already-generated server on port `3000`.
-**This does not regenerate the server** — run `npm run generate:final`
+Starts the already-generated server on port `3000`. This command does **not**
+install dependencies, regenerate code, or require registry access when setup
+has already completed. Run `npm run generate:final` and then
+`npm ci --prefix generated-openapi-generator-custom`
 first if `openapi/openapi.yaml` or a template in `out/` changed.
+
+Mosquitto is optional for normal REST use. Without it, the server logs one
+concise MQTT connection warning and continues starting while the MQTT client
+retries in the background. Start Mosquitto when exercising Lab05.
 
 Override the port:
 

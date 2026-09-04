@@ -7,6 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
+    "setup": "node scripts/setup.js",
     "generate:response-metadata": "node scripts/generate-openapi-response-metadata.js",
     "generate:server": "openapi-generator-cli generate -i openapi/openapi.yaml -g nodejs-express-server -t out -o generated-openapi-generator-custom",
     "generate:final": "npm run generate:response-metadata && npm run generate:server",
@@ -32,6 +33,12 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "2.32.0"
+  },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.4",
     "@grpc/proto-loader": "^0.8.1",
